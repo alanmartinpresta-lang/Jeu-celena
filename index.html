@@ -1,711 +1,328 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    >
-
-    <meta
-        name="theme-color"
-        content="#101b2c"
-    >
-
-    <meta
-        name="apple-mobile-web-app-capable"
-        content="yes"
-    >
-
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
-
-    <title>Mystery Love Island ❤️</title>
-
-    <!--
-        Le style principal est dans style.css.
-        Le moteur du jeu est dans game.js.
-    -->
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#09121c">
+  <title>Mystery Love Island ❤️</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body>
+  <main id="app">
 
-    <!-- =====================================================
-         CONTENEUR PRINCIPAL
-         ===================================================== -->
+    <section id="titleScreen" class="screen title-screen">
+      <div class="title-art" aria-hidden="true"></div>
 
-    <main id="game">
+      <div class="title-panel">
+        <div class="pixel-stars">✦　✧　✦</div>
 
-        <!-- =================================================
-             ÉCRAN D'ACCUEIL
-             ================================================= -->
+        <div class="eyebrow">
+          UNE AVENTURE RIEN QUE POUR TOI...
+        </div>
 
-        <section
-            id="titleScreen"
-            class="screen title-screen"
-        >
+        <h1>
+          MYSTERY<br>
+          <span>LOVE ISLAND</span>
+        </h1>
 
-            <div class="title-background"></div>
+        <p>
+          Une aventure romantique à travers vos souvenirs.
+        </p>
 
-            <div class="title-content">
+        <button id="startBtn" class="gold-btn">
+          COMMENCER <span>♥</span>
+        </button>
 
-                <div class="title-decoration">
-                    ✦
-                </div>
-
-                <p class="small-title">
-                    UNE AVENTURE CRÉÉE POUR TOI
-                </p>
-
-                <h1>
-                    Mystery<br>
-                    <span>Love Island</span>
-                </h1>
-
-                <p class="title-description">
-                    Une aventure à travers vos souvenirs,
-                    à la recherche du trésor le plus précieux.
-                </p>
-
-                <button
-                    id="startBtn"
-                    class="main-button"
-                    type="button"
-                >
-                    <span>Commencer l'aventure</span>
-                    <span class="button-arrow">→</span>
-                </button>
-
-                <div class="title-heart">
-                    ♡
-                </div>
-
-            </div>
-
-        </section>
+        <div class="tiny-copy">
+          20 clés • 20 souvenirs • 1 trésor
+        </div>
+      </div>
+    </section>
 
 
-        <!-- =================================================
-             INTRODUCTION
-             ================================================= -->
+    <section id="mapIntro" class="overlay hidden">
+      <div class="paper">
 
-        <section
-            id="introScreen"
-            class="screen intro-screen hidden"
-        >
+        <div class="paper-pin">
+          🗺️
+        </div>
 
-            <div class="intro-card">
+        <h2>
+          LA CARTE AU TRÉSOR
+        </h2>
 
-                <div class="intro-icon">
-                    🌊
-                </div>
+        <p>
+          « Trouve les <b>20 clés</b> pour découvrir
+          le trésor le plus inestimable. »
+        </p>
 
-                <h2>
-                    Une aventure commence...
-                </h2>
+        <button id="mapContinue" class="wood-btn">
+          CONTINUER →
+        </button>
 
-                <p>
-                    Le personnage se réveille sur une plage
-                    inconnue, sans savoir comment elle est
-                    arrivée là.
-                </p>
-
-                <button
-                    id="continueBtn"
-                    class="main-button"
-                    type="button"
-                >
-                    Continuer
-                    <span class="button-arrow">→</span>
-                </button>
-
-            </div>
-
-        </section>
+      </div>
+    </section>
 
 
-        <!-- =================================================
-             MONDE DU JEU
-             ================================================= -->
+    <section id="gameScreen" class="hidden">
 
-        <section
-            id="gameScreen"
-            class="game-screen"
-        >
-
-            <!--
-                Canvas principal.
-                game.js dessine entièrement le monde ici.
-            -->
-
-            <canvas
-                id="world"
-                aria-label="Monde du jeu"
-            ></canvas>
+      <canvas id="world"></canvas>
 
 
-            <!-- =================================================
-                 HUD
-                 ================================================= -->
+      <header class="hud">
 
-            <header
-                id="hud"
-                class="hud"
-            >
+        <div class="brand">
+          🏝️ MYSTERY LOVE ISLAND
+        </div>
 
-                <div class="hud-left">
+        <div class="hud-right">
 
-                    <div
-                        id="sceneName"
-                        class="scene-name"
-                    >
-                        La plage
-                    </div>
+          <button
+            id="mapBtn"
+            class="hud-btn"
+            aria-label="Carte"
+          >
+            🗺️
+          </button>
 
-                    <div
-                        id="objective"
-                        class="objective"
-                    >
-                        Explore les lieux.
-                    </div>
+          <div id="keyCounter">
+            🔑 0/20
+          </div>
 
-                </div>
+        </div>
+
+      </header>
 
 
-                <div class="hud-right">
-
-                    <button
-                        id="mapBtn"
-                        class="hud-button"
-                        type="button"
-                        aria-label="Ouvrir la carte"
-                    >
-                        🗺️
-                    </button>
+      <div
+        id="sceneBadge"
+        class="scene-badge"
+      >
+        LA PLAGE
+      </div>
 
 
-                    <div
-                        id="keyCounter"
-                        class="key-counter"
-                    >
-                        🔑 0 / 20
-                    </div>
-
-                </div>
-
-            </header>
+      <div
+        id="objective"
+        class="objective"
+      >
+        Elle se réveille...
+      </div>
 
 
-            <!-- =================================================
-                 BOUTON D'INTERACTION
-                 ================================================= -->
+      <div
+        id="dialog"
+        class="dialog hidden"
+      >
 
-            <button
-                id="interactBtn"
-                class="interaction-button"
-                type="button"
-            >
-                <span class="interaction-icon">✦</span>
-                <span>INTERAGIR</span>
-            </button>
+        <div class="dialog-box">
 
+          <div id="dialogText"></div>
 
-            <!-- =================================================
-                 JOYSTICK MOBILE
-                 ================================================= -->
+          <button
+            id="dialogNext"
+            class="dialog-next"
+          >
+            ▶
+          </button>
 
-            <div
-                id="joystick"
-                class="joystick"
-                aria-label="Joystick de déplacement"
-            >
+        </div>
 
-                <div
-                    class="joystick-ring"
-                ></div>
-
-                <div
-                    id="joystickKnob"
-                    class="joystick-knob"
-                ></div>
-
-            </div>
+      </div>
 
 
-            <!-- =================================================
-                 INDICATION CLAVIER
-                 ================================================= -->
+      <div
+        id="questionScreen"
+        class="overlay hidden"
+      >
 
-            <div
-                class="keyboard-help"
-            >
-                <span>↑</span>
-                <span>↓</span>
-                <span>←</span>
-                <span>→</span>
-                <small>
-                    Déplacer
-                </small>
+        <div class="question-card">
 
-                <b>
-                    E
-                </b>
+          <div
+            id="questionNumber"
+            class="q-number"
+          >
+            ÉNIGME 1/20
+          </div>
 
-                <small>
-                    Interagir
-                </small>
-            </div>
+          <div class="q-heart">
+            ♥
+          </div>
+
+          <h2 id="questionText"></h2>
+
+          <input
+            id="answerInput"
+            type="text"
+            autocomplete="off"
+            autocapitalize="sentences"
+            placeholder="Ta réponse"
+            aria-label="Ta réponse"
+          >
+
+          <button
+            id="validateBtn"
+            class="wood-btn"
+          >
+            VALIDER
+          </button>
+
+          <div
+            id="answerFeedback"
+            class="feedback"
+          ></div>
+
+          <button
+            id="revealBtn"
+            class="hint-btn"
+          >
+            💡 DÉCOUVRIR LA RÉPONSE
+          </button>
+
+        </div>
+
+      </div>
 
 
-            <!-- =================================================
-                 BOÎTE DE DIALOGUE
-                 ================================================= -->
+      <div
+        id="mapScreen"
+        class="overlay hidden"
+      >
+
+        <div class="map-card">
+
+          <button
+            id="closeMapBtn"
+            class="close-btn"
+          >
+            ×
+          </button>
+
+          <div class="map-title">
+
+            <span>
+              🗺️ LA CARTE DE L'ÎLE
+            </span>
+
+            <span id="mapKeys">
+              0 / 20
+            </span>
+
+          </div>
+
+          <canvas id="mapCanvas"></canvas>
+
+          <div class="map-caption">
+            Celena avance automatiquement vers la prochaine étape.
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="chestScreen"
+        class="overlay hidden"
+      >
+
+        <div class="chest-card">
+
+          <div class="chest-scene">
 
             <div
-                id="dialog"
-                class="dialogue hidden"
+              class="chest-large"
+              id="chestGraphic"
             >
-
-                <div class="dialogue-panel">
-
-                    <div
-                        class="dialogue-character"
-                    >
-                        <div class="character-avatar">
-                            ♡
-                        </div>
-                    </div>
-
-                    <div
-                        class="dialogue-content"
-                    >
-
-                        <p
-                            id="dialogText"
-                            class="dialogue-text"
-                        ></p>
-
-                        <button
-                            id="dialogNext"
-                            class="dialogue-next"
-                            type="button"
-                        >
-                            Continuer
-                            <span>→</span>
-                        </button>
-
-                    </div>
-
-                </div>
-
+              ▣
             </div>
 
-
-            <!-- =================================================
-                 ÉCRAN DES QUESTIONS
-                 ================================================= -->
-
             <div
-                id="questionScreen"
-                class="modal-screen hidden"
-            >
-
-                <div
-                    class="question-card"
-                >
-
-                    <button
-                        class="modal-close"
-                        type="button"
-                        onclick="document.getElementById('questionScreen').classList.add('hidden')"
-                        aria-label="Fermer"
-                    >
-                        ×
-                    </button>
-
-
-                    <div
-                        id="questionNumber"
-                        class="question-number"
-                    >
-                        ÉNIGME 1 / 20
-                    </div>
-
-
-                    <div
-                        class="question-key-icon"
-                    >
-                        🔑
-                    </div>
-
-
-                    <h2
-                        id="questionText"
-                        class="question-text"
-                    >
-                        Question
-                    </h2>
-
-
-                    <div
-                        class="answer-area"
-                    >
-
-                        <input
-                            id="answerInput"
-                            type="text"
-                            autocomplete="off"
-                            autocapitalize="sentences"
-                            placeholder="Écris ta réponse..."
-                            aria-label="Réponse"
-                        >
-
-
-                        <button
-                            id="validateBtn"
-                            class="main-button"
-                            type="button"
-                        >
-                            Valider
-                            <span class="button-arrow">
-                                →
-                            </span>
-                        </button>
-
-                    </div>
-
-
-                    <div
-                        id="answerFeedback"
-                        class="answerFeedback"
-                    ></div>
-
-
-                    <button
-                        id="revealBtn"
-                        class="secondary-button"
-                        type="button"
-                    >
-                        J'ai besoin d'un indice
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 CARTE
-                 ================================================= -->
-
-            <div
-                id="mapScreen"
-                class="modal-screen hidden"
-            >
-
-                <div
-                    class="map-card"
-                >
-
-                    <button
-                        id="closeMapBtn"
-                        class="modal-close"
-                        type="button"
-                        aria-label="Fermer la carte"
-                    >
-                        ×
-                    </button>
-
-
-                    <div
-                        class="map-header"
-                    >
-
-                        <span>
-                            🗺️
-                        </span>
-
-                        <div>
-
-                            <h2>
-                                La carte des 20 clés
-                            </h2>
-
-                            <p>
-                                Chaque clé te rapproche du trésor.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="map-container"
-                    >
-
-                        <canvas
-                            id="mapCanvas"
-                            aria-label="Carte de l'île"
-                        ></canvas>
-
-                    </div>
-
-
-                    <div
-                        class="map-progress"
-                    >
-
-                        <span>
-                            Progression
-                        </span>
-
-                        <strong>
-                            <span id="mapKeys">
-                                0
-                            </span>
-                            / 20 clés
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 ÉCRAN DU COFFRE
-                 ================================================= -->
-
-            <div
-                id="chestScreen"
-                class="modal-screen hidden"
-            >
-
-                <div
-                    class="chest-card"
-                >
-
-                    <div
-                        class="chest-glow"
-                    ></div>
-
-
-                    <div
-                        class="chest-large"
-                    >
-                        🧰
-                    </div>
-
-
-                    <h2>
-                        Le trésor est devant toi
-                    </h2>
-
-
-                    <p>
-                        Les 20 clés sont réunies.
-                        Le coffre peut maintenant être ouvert.
-                    </p>
-
-
-                    <button
-                        id="openChestBtn"
-                        class="main-button"
-                        type="button"
-                    >
-                        Ouvrir le coffre
-                        <span class="button-arrow">
-                            ✦
-                        </span>
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 TRÉSOR FINAL
-                 ================================================= -->
-
-            <div
-                id="finalMessage"
-                class="modal-screen hidden"
-            >
-
-                <div
-                    class="treasure-card"
-                >
-
-                    <div
-                        class="treasure-stars"
-                    >
-                        ✦ ✧ ✦
-                    </div>
-
-
-                    <div
-                        class="treasure-heart"
-                    >
-                        ❤️
-                    </div>
-
-
-                    <p class="treasure-small-title">
-                        TU AS TROUVÉ LE TRÉSOR
-                    </p>
-
-
-                    <h2>
-                        Le trésor le plus inestimable
-                    </h2>
-
-
-                    <p>
-                        Toutes ces clés n'étaient finalement
-                        qu'un chemin vers quelque chose
-                        de beaucoup plus précieux.
-                    </p>
-
-
-                    <p class="treasure-final-line">
-                        Il te reste une dernière chose
-                        à découvrir...
-                    </p>
-
-
-                    <button
-                        id="treasureBtn"
-                        class="main-button treasure-button"
-                        type="button"
-                    >
-                        Découvrir ton trésor
-                        <span class="button-arrow">
-                            ❤️
-                        </span>
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 TOAST
-                 ================================================= -->
-
-            <div
-                id="toast"
-                class="toast"
-                role="status"
-                aria-live="polite"
+              class="key-orbit"
+              id="keyOrbit"
             ></div>
 
+          </div>
 
-            <!-- =================================================
-                 FONDU DE TRANSITION
-                 ================================================= -->
+          <h2>
+            LE COFFRE MYSTÈRE
+          </h2>
 
-            <div
-                id="fade"
-                class="fade"
-                aria-hidden="true"
-            ></div>
+          <p>
+            Les 20 clés sont réunies.
+            Elles n'étaient que le chemin vers
+            quelque chose de beaucoup plus précieux.
+          </p>
 
-        </section>
+          <button
+            id="openChestBtn"
+            class="gold-btn"
+          >
+            OUVRIR LE COFFRE ✦
+          </button>
 
-    </main>
+        </div>
 
-
-    <!-- =====================================================
-         SCRIPT
-         ORDRE IMPORTANT :
-         DATA → AUDIO → GAME
-         ===================================================== -->
-
-    <script src="data.js"></script>
-    <script src="audio.js"></script>
-    <script src="game.js"></script>
+      </div>
 
 
-    <!-- =====================================================
-         PETITE COMPATIBILITÉ D'AFFICHAGE
-         ===================================================== -->
+      <div
+        id="memoriesScreen"
+        class="overlay hidden"
+      >
 
-    <script>
+        <div class="memory-card">
 
-        /*
-         * Le jeu utilise le même bouton de compteur que le HUD.
-         * Cette petite synchronisation permet également à la carte
-         * d'afficher la progression.
-         */
+          <div class="pixel-stars">
+            ✦ ✧ ✦
+          </div>
 
-        document.addEventListener(
-            "DOMContentLoaded",
-            () => {
+          <h2>
+            NOS 20 SOUVENIRS ❤️
+          </h2>
 
-                const mapKeys =
-                    document.getElementById(
-                        "mapKeys"
-                    );
+          <p id="memoryIntro">
+            Chaque réponse cachait un morceau
+            de votre histoire.
+          </p>
 
-                const keyCounter =
-                    document.getElementById(
-                        "keyCounter"
-                    );
+          <div
+            id="memoryList"
+            class="memory-list"
+          ></div>
 
+          <button
+            id="treasureBtn"
+            class="gold-btn hidden"
+          >
+            DÉCOUVRIR TON TRÉSOR ❤️
+          </button>
 
-                if (
-                    mapKeys &&
-                    keyCounter
-                ) {
+        </div>
 
-                    const observer =
-                        new MutationObserver(
-                            () => {
-
-                                const match =
-                                    keyCounter.textContent.match(
-                                        /\d+/
-                                    );
+      </div>
 
 
-                                if (match) {
-
-                                    mapKeys.textContent =
-                                        match[0];
-
-                                }
-
-                            }
-                        );
+      <div
+        id="toast"
+        class="toast"
+      ></div>
 
 
-                    observer.observe(
-                        keyCounter,
-                        {
-                            childList: true,
-                            characterData: true,
-                            subtree: true
-                        }
-                    );
+      <div
+        id="fade"
+        class="fade"
+      ></div>
 
-                }
+    </section>
 
-            }
-        );
+  </main>
 
-    </script>
+
+  <script src="data.js"></script>
+  <script src="audio.js"></script>
+  <script src="pixel-art.js"></script>
+  <script src="game.js"></script>
 
 </body>
 </html>
