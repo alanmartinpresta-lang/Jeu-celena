@@ -1720,221 +1720,983 @@ function drawObjects(){
 
 function drawCelena(){
 
-    const px=VW/2;
-    const ground=143;
+   /* =========================================================
+   CELENA — VRAI SPRITE PIXEL ART 16-BIT
+   Version détaillée : héroïne aventurière
+========================================================= */
 
-    const walking=S.walking;
+function drawCelena(){
 
-    const phase=
-        walking
-        ? S.walkFrame
-        : 0;
+    const px = Math.round(VW / 2);
+    const ground = 143;
 
-    const legA =
-        walking
-        ? (phase%2===0 ? -3 : 3)
-        : 0;
+    const walking = S.walking;
+    const frame = walking ? S.walkFrame : 0;
 
-    const legB=-legA;
+    /*
+     * Animation :
+     * 0 = jambe gauche devant
+     * 1 = position centrale
+     * 2 = jambe droite devant
+     * 3 = position centrale
+     */
+    const step = walking ? frame % 4 : 1;
 
-    // ombre
+    let leftLeg = 0;
+    let rightLeg = 0;
+    let leftArm = 0;
+    let rightArm = 0;
+
+    if(walking){
+
+        if(step === 0){
+            leftLeg = -4;
+            rightLeg = 4;
+            leftArm = 3;
+            rightArm = -3;
+        }
+
+        else if(step === 1){
+            leftLeg = -1;
+            rightLeg = 1;
+            leftArm = 1;
+            rightArm = -1;
+        }
+
+        else if(step === 2){
+            leftLeg = 4;
+            rightLeg = -4;
+            leftArm = -3;
+            rightArm = 3;
+        }
+
+        else{
+            leftLeg = 1;
+            rightLeg = -1;
+            leftArm = -1;
+            rightArm = 1;
+        }
+
+    }
+
+
+    /* =====================================================
+       PALETTE SPÉCIALE CELENA
+    ===================================================== */
+
+    const P = {
+
+        outline: "#241b22",
+
+        outline2: "#35232a",
+
+        hairDark: "#3a211c",
+        hair: "#633525",
+        hairLight: "#875036",
+        hairGold: "#a8683e",
+
+        skinShadow: "#d58b70",
+        skin: "#f2b08c",
+        skinLight: "#ffd0a8",
+
+        eye: "#241b22",
+        eyeLight: "#fff5df",
+
+        mouth: "#9b4b55",
+
+        hatDark: "#a86e32",
+        hat: "#d8a84e",
+        hatLight: "#f0ca72",
+
+        hatBand: "#a95542",
+
+        shirtDark: "#9e3d56",
+        shirt: "#d65c76",
+        shirtLight: "#ec7186",
+
+        beltDark: "#5b3527",
+        belt: "#9a6030",
+        buckle: "#f1c65c",
+
+        pantsDark: "#1d2b43",
+        pants: "#29405f",
+        pantsLight: "#395678",
+
+        bootsDark: "#3a241d",
+        boots: "#68422d",
+        bootsLight: "#8a5a37",
+
+        bagDark: "#593522",
+        bag: "#85502d",
+        bagLight: "#b8733b",
+
+        gold: "#f6c94f"
+
+    };
+
+
+    /* =====================================================
+       OMBRE AU SOL
+    ===================================================== */
+
     rect(
-        px-16,
-        ground+1,
-        32,
+        px - 20,
+        ground + 1,
+        40,
         5,
-        "rgba(28,34,38,.30)"
-    );
-
-    /* jambes */
-
-    rect(
-        px-10+legA,
-        ground-24,
-        8,
-        23,
-        C.pants
+        "rgba(30,24,25,.32)"
     );
 
     rect(
-        px+2+legB,
-        ground-24,
-        8,
-        23,
-        C.pants
+        px - 15,
+        ground + 5,
+        30,
+        2,
+        "rgba(30,24,25,.18)"
     );
 
-    rect(
-        px-11+legA,
-        ground-3,
-        9,
-        4,
-        C.boot
-    );
+
+    /* =====================================================
+       JAMBES
+    ===================================================== */
+
+    /*
+     * Jambe gauche
+     */
 
     rect(
-        px+2+legB,
-        ground-3,
+        px - 12 + leftLeg,
+        ground - 28,
         10,
-        4,
-        C.boot
-    );
-
-    /* corps */
-
-    rect(
-        px-16,
-        ground-61,
-        32,
-        37,
-        C.shirt
-    );
-
-    rect(
-        px-12,
-        ground-58,
-        24,
-        4,
-        C.shirtDark
-    );
-
-    /* bras */
-
-    const armA=
-        walking
-        ? (phase%2===0 ? 2 : -2)
-        : 0;
-
-    rect(
-        px-21+armA,
-        ground-59,
-        7,
-        24,
-        C.skin
-    );
-
-    rect(
-        px+14-armA,
-        ground-59,
-        7,
-        24,
-        C.skin
-    );
-
-    /* sac */
-
-    rect(
-        px+15,
-        ground-57,
-        9,
-        23,
-        C.bagDark || C.bag
-    );
-
-    rect(
-        px+17,
-        ground-55,
-        8,
-        13,
-        C.bagLight
-    );
-
-    /* cou */
-
-    rect(
-        px-5,
-        ground-68,
-        10,
-        9,
-        C.skin
-    );
-
-    /* visage */
-
-    rect(
-        px-17,
-        ground-91,
-        34,
         27,
-        C.skin
+        P.outline
     );
 
-    /* cheveux */
+    rect(
+        px - 10 + leftLeg,
+        ground - 27,
+        7,
+        25,
+        P.pants
+    );
 
     rect(
-        px-18,
-        ground-95,
-        36,
+        px - 10 + leftLeg,
+        ground - 25,
+        3,
+        18,
+        P.pantsLight
+    );
+
+
+    /*
+     * Jambe droite
+     */
+
+    rect(
+        px + 2 + rightLeg,
+        ground - 28,
+        10,
+        27,
+        P.outline
+    );
+
+    rect(
+        px + 4 + rightLeg,
+        ground - 27,
+        7,
+        25,
+        P.pants
+    );
+
+    rect(
+        px + 8 + rightLeg,
+        ground - 25,
+        3,
+        18,
+        P.pantsLight
+    );
+
+
+    /* =====================================================
+       BOTTES
+    ===================================================== */
+
+    /*
+     * gauche
+     */
+
+    rect(
+        px - 14 + leftLeg,
+        ground - 4,
+        13,
+        6,
+        P.outline
+    );
+
+    rect(
+        px - 12 + leftLeg,
+        ground - 4,
+        10,
+        4,
+        P.boots
+    );
+
+    rect(
+        px - 11 + leftLeg,
+        ground - 4,
+        8,
+        2,
+        P.bootsLight
+    );
+
+
+    /*
+     * droite
+     */
+
+    rect(
+        px + 1 + rightLeg,
+        ground - 4,
+        14,
+        6,
+        P.outline
+    );
+
+    rect(
+        px + 3 + rightLeg,
+        ground - 4,
+        10,
+        4,
+        P.boots
+    );
+
+    rect(
+        px + 4 + rightLeg,
+        ground - 4,
+        8,
+        2,
+        P.bootsLight
+    );
+
+
+    /* =====================================================
+       SAC À DOS
+    ===================================================== */
+
+    /*
+     * Le sac est derrière son épaule.
+     */
+
+    rect(
+        px + 13,
+        ground - 59,
         12,
-        C.hair
+        29,
+        P.outline
     );
 
     rect(
-        px-18,
-        ground-88,
+        px + 15,
+        ground - 57,
+        10,
+        25,
+        P.bagDark
+    );
+
+    rect(
+        px + 17,
+        ground - 54,
+        8,
+        17,
+        P.bag
+    );
+
+    rect(
+        px + 18,
+        ground - 52,
         6,
-        18,
-        C.hair
+        10,
+        P.bagLight
     );
 
     rect(
-        px+12,
-        ground-88,
+        px + 18,
+        ground - 43,
         6,
+        2,
+        P.bagDark
+    );
+
+    /*
+     * petite boucle du sac
+     */
+
+    rect(
+        px + 19,
+        ground - 58,
+        4,
+        3,
+        P.gold
+    );
+
+
+    /* =====================================================
+       CORPS
+    ===================================================== */
+
+    /*
+     * contour noir du torse
+     */
+
+    rect(
+        px - 17,
+        ground - 63,
+        34,
+        39,
+        P.outline
+    );
+
+    /*
+     * tunique
+     */
+
+    rect(
+        px - 15,
+        ground - 61,
+        30,
+        35,
+        P.shirt
+    );
+
+    /*
+     * lumière sur la tunique
+     */
+
+    rect(
+        px - 12,
+        ground - 59,
+        6,
+        29,
+        P.shirtLight
+    );
+
+    /*
+     * ombre côté droit
+     */
+
+    rect(
+        px + 9,
+        ground - 59,
+        6,
+        31,
+        P.shirtDark
+    );
+
+
+    /* =====================================================
+       COL / FOULARD
+    ===================================================== */
+
+    rect(
+        px - 8,
+        ground - 66,
+        16,
+        8,
+        P.shirtDark
+    );
+
+    rect(
+        px - 6,
+        ground - 65,
+        12,
+        5,
+        P.hatBand
+    );
+
+
+    /* =====================================================
+       CEINTURE
+    ===================================================== */
+
+    rect(
+        px - 15,
+        ground - 32,
+        30,
+        5,
+        P.beltDark
+    );
+
+    rect(
+        px - 14,
+        ground - 31,
+        28,
+        3,
+        P.belt
+    );
+
+    /*
+     * boucle dorée
+     */
+
+    rect(
+        px - 3,
+        ground - 32,
+        6,
+        6,
+        P.gold
+    );
+
+    rect(
+        px - 1,
+        ground - 31,
+        3,
+        4,
+        P.beltDark
+    );
+
+
+    /* =====================================================
+       BRAS GAUCHE
+    ===================================================== */
+
+    rect(
+        px - 23 + leftArm,
+        ground - 61,
+        9,
+        27,
+        P.outline
+    );
+
+    rect(
+        px - 21 + leftArm,
+        ground - 59,
+        6,
+        22,
+        P.skin
+    );
+
+    rect(
+        px - 20 + leftArm,
+        ground - 58,
+        4,
+        14,
+        P.skinLight
+    );
+
+    /*
+     * main
+     */
+
+    rect(
+        px - 21 + leftArm,
+        ground - 37,
+        7,
+        7,
+        P.skinShadow
+    );
+
+    rect(
+        px - 20 + leftArm,
+        ground - 38,
+        5,
+        6,
+        P.skin
+    );
+
+
+    /* =====================================================
+       BRAS DROIT
+    ===================================================== */
+
+    rect(
+        px + 14 + rightArm,
+        ground - 61,
+        9,
+        27,
+        P.outline
+    );
+
+    rect(
+        px + 15 + rightArm,
+        ground - 59,
+        6,
+        22,
+        P.skin
+    );
+
+    rect(
+        px + 16 + rightArm,
+        ground - 58,
+        4,
+        14,
+        P.skinLight
+    );
+
+    /*
+     * main
+     */
+
+    rect(
+        px + 15 + rightArm,
+        ground - 37,
+        7,
+        7,
+        P.skinShadow
+    );
+
+    rect(
+        px + 16 + rightArm,
+        ground - 38,
+        5,
+        6,
+        P.skin
+    );
+
+
+    /* =====================================================
+       COU
+    ===================================================== */
+
+    rect(
+        px - 7,
+        ground - 73,
+        14,
+        12,
+        P.outline
+    );
+
+    rect(
+        px - 5,
+        ground - 72,
+        10,
+        11,
+        P.skin
+    );
+
+    rect(
+        px - 4,
+        ground - 71,
+        8,
+        7,
+        P.skinLight
+    );
+
+
+    /* =====================================================
+       CHEVEUX ARRIÈRE
+    ===================================================== */
+
+    /*
+     * Grande masse de cheveux
+     */
+
+    rect(
+        px - 20,
+        ground - 98,
+        40,
+        33,
+        P.outline
+    );
+
+    rect(
+        px - 18,
+        ground - 96,
+        36,
+        31,
+        P.hairDark
+    );
+
+    /*
+     * mèches gauche
+     */
+
+    rect(
+        px - 21,
+        ground - 91,
+        8,
+        26,
+        P.hair
+    );
+
+    rect(
+        px - 23,
+        ground - 84,
+        7,
         18,
-        C.hair
-    );
-
-    /* visage */
-
-    rect(
-        px-10,
-        ground-80,
-        3,
-        3,
-        C.hair
+        P.hair
     );
 
     rect(
-        px+7,
-        ground-80,
-        3,
-        3,
-        C.hair
+        px - 19,
+        ground - 82,
+        6,
+        14,
+        P.hairLight
+    );
+
+    /*
+     * mèches droite
+     */
+
+    rect(
+        px + 13,
+        ground - 91,
+        8,
+        27,
+        P.hair
     );
 
     rect(
-        px-5,
-        ground-72,
+        px + 16,
+        ground - 83,
+        7,
+        17,
+        P.hairDark
+    );
+
+    rect(
+        px + 14,
+        ground - 79,
+        5,
+        13,
+        P.hairLight
+    );
+
+
+    /* =====================================================
+       VISAGE
+    ===================================================== */
+
+    rect(
+        px - 17,
+        ground - 91,
+        34,
+        28,
+        P.outline
+    );
+
+    rect(
+        px - 15,
+        ground - 89,
+        30,
+        25,
+        P.skin
+    );
+
+    /*
+     * lumière du visage
+     */
+
+    rect(
+        px - 11,
+        ground - 87,
+        18,
+        17,
+        P.skinLight
+    );
+
+    /*
+     * ombre sous les cheveux
+     */
+
+    rect(
+        px - 15,
+        ground - 89,
+        30,
+        5,
+        P.skinShadow
+    );
+
+
+    /* =====================================================
+       YEUX — PLUS EXPRESSIFS
+    ===================================================== */
+
+    /*
+     * sourcil gauche
+     */
+
+    rect(
+        px - 11,
+        ground - 81,
+        7,
+        2,
+        P.hairDark
+    );
+
+    /*
+     * sourcil droit
+     */
+
+    rect(
+        px + 4,
+        ground - 81,
+        7,
+        2,
+        P.hairDark
+    );
+
+    /*
+     * oeil gauche
+     */
+
+    rect(
+        px - 10,
+        ground - 78,
+        6,
+        6,
+        P.eye
+    );
+
+    rect(
+        px - 9,
+        ground - 78,
+        2,
+        2,
+        P.eyeLight
+    );
+
+    /*
+     * oeil droit
+     */
+
+    rect(
+        px + 4,
+        ground - 78,
+        6,
+        6,
+        P.eye
+    );
+
+    rect(
+        px + 5,
+        ground - 78,
+        2,
+        2,
+        P.eyeLight
+    );
+
+
+    /* =====================================================
+       NEZ
+    ===================================================== */
+
+    rect(
+        px - 1,
+        ground - 72,
+        4,
+        3,
+        P.skinShadow
+    );
+
+    rect(
+        px + 1,
+        ground - 71,
+        3,
+        2,
+        P.skin
+    );
+
+
+    /* =====================================================
+       SOURIRE
+    ===================================================== */
+
+    rect(
+        px - 5,
+        ground - 66,
         10,
         2,
-        "#9e4f5c"
+        P.mouth
     );
 
-    /* chapeau aventurière */
-
     rect(
-        px-20,
-        ground-101,
-        40,
+        px - 3,
+        ground - 64,
         6,
-        "#d8ae58"
+        2,
+        P.mouth
     );
 
     rect(
-        px-14,
-        ground-108,
-        28,
-        9,
-        "#e2be6d"
+        px - 2,
+        ground - 64,
+        4,
+        1,
+        P.skinLight
+    );
+
+
+    /* =====================================================
+       CHEVEUX DEVANT
+    ===================================================== */
+
+    /*
+     * Frange
+     */
+
+    rect(
+        px - 16,
+        ground - 93,
+        32,
+        8,
+        P.hairDark
     );
 
     rect(
-        px-9,
-        ground-106,
-        18,
+        px - 13,
+        ground - 95,
+        11,
+        7,
+        P.hair
+    );
+
+    rect(
+        px + 2,
+        ground - 95,
+        11,
+        7,
+        P.hair
+    );
+
+    /*
+     * reflets pixel
+     */
+
+    rect(
+        px - 12,
+        ground - 92,
+        4,
         3,
-        "#a87535"
+        P.hairLight
+    );
+
+    rect(
+        px + 7,
+        ground - 92,
+        4,
+        3,
+        P.hairLight
+    );
+
+
+    /* =====================================================
+       CHAPEAU D'AVENTURIÈRE
+    ===================================================== */
+
+    /*
+     * contour du chapeau
+     */
+
+    rect(
+        px - 25,
+        ground - 103,
+        50,
+        8,
+        P.outline
+    );
+
+    /*
+     * large bord
+     */
+
+    rect(
+        px - 24,
+        ground - 102,
+        48,
+        6,
+        P.hat
+    );
+
+    rect(
+        px - 19,
+        ground - 103,
+        38,
+        3,
+        P.hatLight
+    );
+
+    /*
+     * couronne
+     */
+
+    rect(
+        px - 17,
+        ground - 111,
+        34,
+        12,
+        P.outline
+    );
+
+    rect(
+        px - 15,
+        ground - 110,
+        30,
+        10,
+        P.hat
+    );
+
+    rect(
+        px - 11,
+        ground - 109,
+        22,
+        6,
+        P.hatLight
+    );
+
+    /*
+     * bande rouge
+     */
+
+    rect(
+        px - 15,
+        ground - 103,
+        30,
+        4,
+        P.hatBand
+    );
+
+    rect(
+        px - 12,
+        ground - 102,
+        24,
+        2,
+        "#c7644d"
+    );
+
+
+    /* =====================================================
+       PETIT RUBAN DU CHAPEAU
+    ===================================================== */
+
+    rect(
+        px + 12,
+        ground - 103,
+        5,
+        5,
+        P.hatDark
+    );
+
+    rect(
+        px + 15,
+        ground - 101,
+        5,
+        4,
+        P.hatBand
+    );
+
+}
+    /* =====================================================
+       PETIT DÉTAIL DORÉ
+    ===================================================== */
+
+    rect(
+        px - 18,
+        ground - 101,
+        3,
+        3,
+        P.gold
     );
 
 }
