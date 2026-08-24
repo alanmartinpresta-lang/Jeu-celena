@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#081018">
+<title>Mystery Love Island</title>
+<style>
+:root{--gold:#f4ca68;--wood:#704324;--paper:#f5e2ad}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#081018}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff}
+button,input{font:inherit}button{touch-action:manipulation}
+#app{position:fixed;inset:0;overflow:hidden}.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
+.screen.in{animation:fade .4s ease}@keyframes fade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+.btn{border:3px solid var(--gold);background:var(--wood);color:#fff;border-radius:14px;padding:13px 20px;min-height:52px;font-weight:900;text-transform:uppercase;box-shadow:0 5px #342216;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 2px #342216}.secondary{background:#293747;border-color:#91a5bd}
+.center{align-items:center;justify-content:center;text-align:center;padding:22px}
+#title{flex-direction:column;background:radial-gradient(circle at 50% 35%,#30475f,#0b131d 70%)}
+.titleChest{font-size:78px;animation:float 2s ease-in-out infinite}@keyframes float{50%{transform:translateY(-7px)}}
+#title h1{font:900 30px Georgia,serif;letter-spacing:2px;margin:10px 0}.copy{max-width:520px;line-height:1.5;color:#d7e0e8}.gold{color:var(--gold);font-weight:950;margin:7px 0 16px}
+#intro{overflow:hidden}.sky{position:absolute;inset:0;background:linear-gradient(#63b3da 0 52%,#45a7c9 52% 72%,#e3c77b 72%)}
+.sun{position:absolute;width:72px;height:72px;border-radius:50%;background:#ffe8a2;right:13%;top:12%;box-shadow:0 0 35px #fff4}
+.cloud{position:absolute;width:110px;height:28px;background:#ffffff77;border-radius:40px;top:18%;left:12%;animation:cloud 16s linear infinite}
+.cloud:after{content:"";position:absolute;width:55px;height:40px;background:#ffffff77;border-radius:50%;left:28px;top:-18px}
+@keyframes cloud{50%{transform:translateX(90px)}}
+.sea{position:absolute;left:0;right:0;top:52%;height:20%;background:repeating-linear-gradient(0deg,#3e9fc4 0 14px,#67b8d0 15px 19px);animation:waves 2.4s linear infinite}
+@keyframes waves{to{background-position-y:38px}}
+.palm{position:absolute;left:8%;bottom:24%;font-size:105px;transform:rotate(-5deg);filter:drop-shadow(2px 4px 2px #0003)}
+.sand{position:absolute;left:0;right:0;bottom:0;height:30%;background:#e3c477}
+.person{position:absolute;bottom:25%;left:43%;width:45px;height:120px;transition:left 2.5s ease}
+.person .head{position:absolute;top:0;left:8px;width:30px;height:30px;border-radius:50%;background:#f1c5a4}
+.person .hair{position:absolute;top:-3px;left:5px;width:36px;height:18px;border-radius:20px 20px 6px 6px;background:#5a3525}
+.person .body{position:absolute;top:31px;left:7px;width:31px;height:50px;border-radius:10px;background:#e85d72}
+.person .arm{position:absolute;top:37px;width:8px;height:42px;border-radius:8px;background:#f1c5a4}.person .a1{left:0;transform:rotate(16deg)}.person .a2{right:0;transform:rotate(-16deg)}
+.person .leg{position:absolute;top:78px;width:9px;height:42px;border-radius:8px;background:#28384a}.person .l1{left:8px}.person .l2{right:8px}
+.walking .l1{animation:leg .35s infinite alternate}.walking .l2{animation:leg .35s infinite alternate-reverse}@keyframes leg{to{transform:rotate(18deg)}}
+.bottle{position:absolute;bottom:25%;left:72%;font-size:40px;opacity:0;transform:rotate(-18deg);transition:.5s}.bottle.show{opacity:1;animation:bob 1.3s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-7px) rotate(-12deg)}}
+.dialog{position:absolute;z-index:10;left:5%;right:5%;bottom:5%;background:#172532ee;border:3px solid #d8b75e;border-radius:14px;padding:15px 52px 15px 16px;line-height:1.45;box-shadow:0 7px #0005;font-size:17px}
+.dialog button{position:absolute;right:8px;bottom:5px;background:none;border:0;color:#fff;font-size:34px;width:42px;height:42px}
+#paper{align-items:center;justify-content:center;background:linear-gradient(#72aec5 0 50%,#e2cb88 50%)}
+.paper{width:min(90%,500px);background:var(--paper);color:#392718;border:4px solid #98703c;border-radius:10px;padding:24px;text-align:center;font-family:Georgia,serif;box-shadow:0 9px #0005}
+.paper h2{font-size:35px;margin:10px 0}.paper p{font-size:20px;line-height:1.45}
+#map{flex-direction:column;padding:10px;background:#101922}.top{display:flex;justify-content:space-between;padding:3px 5px 9px;font-weight:950}.counter{color:var(--gold);font-size:19px}
+.mapbox{position:relative;flex:1;min-height:0;border:3px solid #55745c;border-radius:17px;overflow:hidden;background:linear-gradient(#4d9fc0,#7bb8a0 55%,#d3bc72)}
+.maptitle{position:absolute;z-index:3;top:9px;left:50%;transform:translateX(-50%);background:#18222de8;border:2px solid #dcb55c;border-radius:9px;padding:7px 12px;font-size:13px;white-space:nowrap}
+.lockinfo{position:absolute;z-index:3;right:6%;top:9%;background:#20262ccc;border:2px solid #b34d52;color:#ff7777;padding:7px 10px;border-radius:8px;font-weight:950;font-size:12px}
+.island{position:absolute;width:115px;height:70px;border-radius:50%;background:#77a861;box-shadow:inset -10px -7px #56844f,0 5px 8px #0003}.i1{left:8%;top:27%}.i2{left:38%;top:45%;transform:rotate(10deg)}.i3{right:8%;top:29%;transform:rotate(-8deg)}
+.path{position:absolute;left:15%;right:15%;top:55%;height:7px;background:#f3db8a;transform:rotate(-7deg);border-radius:10px;box-shadow:0 0 0 2px #8b6d3d55}
+.mapkey{position:absolute;font-size:25px}.k1{left:17%;top:48%}.k2{left:40%;top:64%}.k3{left:65%;top:45%}.k4{right:16%;top:62%}.chest{position:absolute;right:7%;bottom:10%;font-size:48px;animation:float 2s infinite}
+.hint{text-align:center;padding:7px;color:#cbd6df;font-size:13px}
+#question,#final,#memories,#treasure{align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px;background:radial-gradient(circle at 50% 35%,#34485b,#0d151e)}
+.panel{width:min(100%,650px);max-height:92vh;overflow:auto;background:linear-gradient(135deg,#80502b,#60391f);border:4px solid #c49755;border-radius:16px;padding:20px;box-shadow:0 8px #342218}
+.panel h2{font:900 22px Georgia,serif;margin:0 0 14px}.q{font-size:20px;line-height:1.45;margin-bottom:16px}
+.answer{display:block;width:100%;padding:15px;border-radius:11px;border:2px solid #c49755;background:#121a22;color:#fff;font-size:19px;outline:none;-webkit-appearance:none}
+.answer:focus{border-color:#f4ca68;box-shadow:0 0 0 3px #f4ca6830}.actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:11px}
+.feedback{min-height:28px;margin-top:10px;font-weight:950}.good{color:#a9e8ae}.bad{color:#ffaaa9}.big{font-size:94px;animation:float 2s infinite}
+.list{width:min(100%,650px);max-height:58%;overflow:auto;text-align:left}.memory{padding:12px;margin:7px 0;background:#202b37;border:1px solid #69798b;border-radius:10px}.memory b{color:var(--gold)}
+.treasureBox{background:var(--paper);color:#392718;border:4px solid #b98a48;border-radius:12px;padding:22px;max-width:560px;box-shadow:0 9px #392718}.spark{font-size:62px;animation:float 1.2s infinite}
+@media(max-width:600px){.q{font-size:18px}.panel{padding:17px}.paper h2{font-size:31px}}
+</style>
+</head>
+<body>
+<div id="app">
+<section id="title" class="screen active center"><div class="titleChest">🔐</div><h1>MYSTERY LOVE ISLAND</h1><p class="copy">Une aventure mystérieuse t'attend.<br>Réunis toutes les clés pour découvrir le trésor à la valeur inestimable.</p><div class="gold">🗝️ 20 CLÉS NÉCESSAIRES</div><button class="btn" id="start">Démarrer l'aventure</button></section>
+<section id="intro" class="screen"><div class="sky"></div><div class="sun"></div><div class="cloud"></div><div class="sea"></div><div class="sand"></div><div class="palm">🌴</div><div id="person" class="person"><div class="hair"></div><div class="head"></div><div class="body"></div><div class="arm a1"></div><div class="arm a2"></div><div class="leg l1"></div><div class="leg l2"></div></div><div id="bottle" class="bottle">🍾</div><div class="dialog"><span id="dialogText">Mais qu'est-ce que je fais ici ?</span><button id="next">›</button></div></section>
+<section id="paper" class="screen"><div class="paper"><div style="font-size:64px">🗺️</div><h2>La carte au trésor</h2><p>« Trouve les 20 clés pour découvrir le trésor le plus inestimable. »</p><button class="btn" id="paperNext">Continuer</button></div></section>
+<section id="map" class="screen"><div class="top"><span>🏝️ MYSTERY LOVE ISLAND</span><span class="counter">🗝️ <b id="count">0</b>/20</span></div><div class="mapbox"><div class="maptitle">LE CHEMIN DU TRÉSOR</div><div class="lockinfo">🔒 20 CLÉS POUR LE COFFRE</div><div class="island i1"></div><div class="island i2"></div><div class="island i3"></div><div class="path"></div><div class="mapkey k1">🗝️</div><div class="mapkey k2">🗝️</div><div class="mapkey k3">🗝️</div><div class="mapkey k4">🗝️</div><div class="chest">💰</div></div><div class="hint">Étape 1 : le premier mystère t'attend.</div><button class="btn" id="puzzle">Énigme 1 →</button></section>
+<section id="question" class="screen"><div class="panel"><h2 id="qt">ÉNIGME 1 / 20</h2><div id="qq" class="q"></div><input id="ans" class="answer" type="text" inputmode="text" autocapitalize="sentences" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Ta réponse"><div class="actions"><button class="btn" id="val">Valider</button><button class="btn secondary" id="rev">Découvrir la réponse</button></div><div id="fb" class="feedback"></div></div></section>
+<section id="final" class="screen"><div class="big">🔓</div><h1>LE COFFRE S'OUVRE</h1><p>Les 20 clés sont réunies.</p><button class="btn" id="memBtn">Découvrir notre histoire</button></section>
+<section id="memories" class="screen"><h1>❤️ Les morceaux de notre histoire</h1><div id="list" class="list"></div><button class="btn" id="treBtn">💎 Découvrir ton trésor</button></section>
+<section id="treasure" class="screen"><div class="spark">💎</div><div class="treasureBox"><h1>Ton trésor t'attend...</h1><p>Tu as trouvé toutes les clés.</p><button class="btn" id="open">Découvrir ton trésor</button></div></section>
+</div>
+<script>
+"use strict";
+const Q=[
+["Combien font 11 + 2 ?","13"],["Quel est le nom de la basilique située sur les hauteurs de Lyon ?","Fourvière"],["Quel chanteur britannique est notamment connu pour « Perfect » ?","Ed Sheeran"],["De quel pays est originaire la poutine ?","Canada"],["Combien font 8 − 2 ?","6"],["Quel dessert est préparé avec une base biscuitée et une garniture au fromage frais ?","Cheesecake"],["Comment s'appelle la série dans laquelle on suit notamment Ross, Rachel, Monica, Chandler, Joey et Phoebe ?","Friends"],["Dans quel film un homme raconte-t-il leur histoire à une femme qui souffre d’Alzheimer ?","N’oublie jamais"],["Combien font 20 − 1 ?","19"],["Qui interprète « Love Me Like You Do » ?","Ellie Goulding"],["Quelle ville française est célèbre pour son Festival international du cinéma ?","Cannes"],["Quel célèbre parc d’attractions Disney se trouve en France ?","Disneyland"],["Combien font 1 + 1 ?","2"],["Dans Desperate Housewives, quel surnom Susan donne-t-elle à Mike ?","Petit pois"],["Quelle période de l’année est associée aux sapins, cadeaux et illuminations ?","Noël"],["Quel est le plus grand titre du groupe Goo Goo Dolls ?","Iris"],["Combien font 1 + 2 ?","3"],["En quelle année la France a-t-elle remporté la Coupe du monde ?","2018"],["Combien font 5 × 405 ?","2025"],["Comment s’appelle le mari le plus incroyable de la Terre ?","Alan"]
+];
+const REASONS_URL="https://alanmartinpresta-lang.github.io/Celena-app/?utm_source=chatgpt.com";
+const memories=[["13/06/2018","Notre date de couple ❤️"],["19/02/2022","La naissance d’Iris ❤️"],["03/10/2025","La naissance d’Ellie ❤️"],["Canada","Notre premier grand voyage"],["Punta Cana","Notre deuxième grand voyage"],["Friends","Ta série préférée"],["N’oublie jamais","Ton film romantique préféré"],["Fourvière","Notre premier rendez-vous"],["Cheesecake","Ton dessert préféré"],["Disneyland","Ton parc d’attraction préféré"],["Cannes","Nos vacances d’été"],["Petit pois","Le premier surnom que tu m’as donné"],["Noël","Ta période préférée"],["Ed Sheeran","Ton chanteur préféré"],["Iris — Goo Goo Dolls","La musique de la grossesse d’Iris"],["Ellie Goulding","La chanteuse liée à la grossesse d’Ellie"]];
+let index=0,keys=0,introStep=0,audio=null;
+const $=id=>document.getElementById(id),screens=[...document.querySelectorAll(".screen")];
+function show(id){screens.forEach(s=>s.classList.remove("active","in"));const e=$(id);e.classList.add("active","in");setTimeout(()=>e.classList.remove("in"),450)}
+function norm(s){return s.toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ")}
+function good(a,b){const x=norm(a),y=norm(b);return !!x&&(x===y||x.includes(y)||y.includes(x))}
+function question(i=index){index=i;$("qt").textContent=`ÉNIGME ${index+1} / ${Q.length}`;$("qq").textContent=Q[index][0];$("ans").value="";$("fb").textContent="";$("fb").className="feedback";show("question");setTimeout(()=>{$("ans").focus({preventScroll:true});try{$("ans").scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}},120)}
+function key(){keys=Math.min(20,keys+1);$("count").textContent=keys}
+function validate(){if(good($("ans").value,Q[index][1])){$("fb").textContent="✨ Bonne réponse ! Une clé est trouvée.";$("fb").className="feedback good";key();setTimeout(()=>{index++;index<20?question(index):show("final")},600)}else{$("fb").textContent="Ce n'est pas la bonne réponse. Réessaie…";$("fb").className="feedback bad"}}
+function reveal(){$("ans").value=Q[index][1];$("fb").textContent="Réponse révélée : la clé est ajoutée.";$("fb").className="feedback good";key();setTimeout(()=>{index++;index<20?question(index):show("final")},850)}
+function intro(){const p=$("person"),b=$("bottle");if(introStep===0){introStep=1;$("dialogText").textContent="Une bouteille échouée sur le sable…";b.classList.add("show");p.classList.add("walking");p.style.left="68%"}else if(introStep===1){introStep=2;$("dialogText").textContent="Elle contient peut-être quelque chose…"}else if(introStep===2){introStep=3;$("dialogText").textContent="Une carte au trésor !"}else show("paper")}
+function setupAudio(){if(audio)return;try{audio=new(window.AudioContext||window.webkitAudioContext)();audio.resume();const master=audio.createGain();master.gain.value=.2;master.connect(audio.destination);const music=audio.createGain();music.gain.value=.12;music.connect(master);const notes=[261.63,329.63,392,329.63,293.66,349.23,440,349.23];let n=0;setInterval(()=>{const o=audio.createOscillator(),g=audio.createGain();o.type="sine";o.frequency.value=notes[n++%notes.length];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.04,audio.currentTime+.05);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+1.1);o.connect(g);g.connect(music);o.start();o.stop(audio.currentTime+1.15)},900);setInterval(()=>{const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=80+Math.random()*35;g.gain.value=.012;o.connect(g);g.connect(master);o.start();o.stop(audio.currentTime+.7)},1800)}catch(e){}}
+$("start").onclick=()=>{setupAudio();show("intro")};
+$("next").onclick=intro;
+$("paperNext").onclick=()=>show("map");
+$("puzzle").onclick=()=>question(index);
+$("val").onclick=validate;
+$("rev").onclick=reveal;
+$("ans").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();validate()}});
+$("ans").addEventListener("input",()=>{$("fb").textContent="";$("fb").className="feedback"});
+$("memBtn").onclick=()=>{$("list").innerHTML=memories.map((m,i)=>`<div class="memory"><b>${i+1}. ${m[0]}</b><br>${m[1]}</div>`).join("");show("memories")};
+$("treBtn").onclick=()=>show("treasure");
+$("open").onclick=()=>location.href=REASONS_URL;
+</script>
+</body>
+</html>
