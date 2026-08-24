@@ -1,0 +1,911 @@
+/* MYSTERY LOVE ISLAND — direction artistique */
+
+:root{
+  --ink:#101c2b;
+  --deep:#07131f;
+  --gold:#f3c75b;
+  --gold2:#ffe69a;
+  --paper:#f4dfaa;
+  --wood:#70401f;
+  --pink:#e66a78;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body,
+#app{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:var(--deep);
+}
+
+body{
+  overflow:hidden;
+  font-family:Georgia,"Times New Roman",serif;
+}
+
+button,
+input{
+  font:inherit;
+}
+
+.hidden{
+  display:none!important;
+}
+
+
+/* =========================================================
+   JEU
+   ========================================================= */
+
+#gameScreen{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+  background:#081522;
+}
+
+#world{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  image-rendering:auto;
+}
+
+
+/* =========================================================
+   HUD
+   ========================================================= */
+
+.hud{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:76px;
+  z-index:20;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:10px 18px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5,15,26,.96),
+      rgba(5,15,26,.72),
+      transparent
+    );
+
+  color:#fff;
+  pointer-events:none;
+}
+
+.brand{
+  font-family:Impact,Arial Black,sans-serif;
+  letter-spacing:1px;
+  font-size:clamp(18px,3vw,30px);
+  text-shadow:3px 3px #08111c;
+}
+
+.hud-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  pointer-events:auto;
+}
+
+.hud-btn{
+  width:52px;
+  height:52px;
+  border-radius:14px;
+  border:3px solid var(--gold);
+
+  background:#142536;
+  color:white;
+
+  font-size:26px;
+
+  box-shadow:
+    0 5px 0 #06101a;
+}
+
+#keyCounter{
+  color:var(--gold2);
+
+  font-family:Impact,Arial Black,sans-serif;
+
+  font-size:clamp(18px,3vw,28px);
+
+  text-shadow:2px 2px #111;
+}
+
+
+/* =========================================================
+   NOM DE LA ZONE
+   ========================================================= */
+
+.scene-badge{
+  position:absolute;
+  z-index:10;
+
+  top:88px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  padding:9px 22px;
+
+  border:3px solid var(--gold);
+  border-radius:13px;
+
+  background:rgba(10,26,39,.88);
+
+  color:white;
+
+  font-family:Impact,Arial Black,sans-serif;
+
+  font-size:clamp(16px,3vw,28px);
+
+  letter-spacing:1px;
+
+  text-shadow:2px 2px #000;
+}
+
+
+/* =========================================================
+   OBJECTIF
+   ========================================================= */
+
+.objective{
+  position:absolute;
+  z-index:10;
+
+  left:50%;
+  bottom:30px;
+
+  transform:translateX(-50%);
+
+  max-width:min(90%,720px);
+
+  padding:14px 22px;
+
+  text-align:center;
+
+  border:3px solid var(--gold);
+  border-radius:16px;
+
+  background:rgba(9,24,36,.92);
+
+  color:#fff;
+
+  font-weight:700;
+
+  font-size:clamp(14px,2.4vw,21px);
+
+  box-shadow:
+    0 7px 0 rgba(0,0,0,.35);
+}
+
+
+/* =========================================================
+   DIALOGUE
+   ========================================================= */
+
+.dialog{
+  position:absolute;
+  inset:0;
+
+  z-index:40;
+
+  pointer-events:none;
+}
+
+.dialog-box{
+  position:absolute;
+
+  left:5%;
+  right:5%;
+  bottom:8%;
+
+  min-height:86px;
+
+  display:flex;
+  align-items:center;
+
+  gap:18px;
+
+  padding:22px 22px 22px 28px;
+
+  border:4px solid var(--gold);
+  border-radius:18px;
+
+  background:rgba(11,26,39,.96);
+
+  color:white;
+
+  font-size:clamp(18px,3.3vw,28px);
+
+  font-weight:700;
+
+  line-height:1.25;
+
+  box-shadow:
+    0 9px 0 rgba(0,0,0,.38);
+
+  pointer-events:auto;
+}
+
+#dialogText{
+  white-space:pre-line;
+  flex:1;
+}
+
+.dialog-next{
+  flex:0 0 52px;
+
+  width:52px;
+  height:52px;
+
+  border-radius:50%;
+
+  border:3px solid var(--gold);
+
+  background:var(--wood);
+
+  color:white;
+
+  font-size:22px;
+}
+
+
+/* =========================================================
+   OVERLAYS
+   ========================================================= */
+
+.overlay{
+  position:absolute;
+  inset:0;
+
+  z-index:50;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:22px;
+
+  background:rgba(3,10,18,.62);
+
+  backdrop-filter:blur(3px);
+}
+
+
+/* =========================================================
+   CARTES
+   ========================================================= */
+
+.question-card,
+.chest-card,
+.memory-card,
+.map-card,
+.paper{
+  width:min(92%,760px);
+
+  max-height:90vh;
+
+  overflow:auto;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f1d89a,
+      #d8b96b
+    );
+
+  border:6px solid #7b4a25;
+
+  border-radius:16px;
+
+  box-shadow:
+    0 12px 0 rgba(0,0,0,.4),
+    0 0 0 3px var(--gold);
+
+  color:#3b2418;
+
+  padding:30px;
+
+  text-align:center;
+}
+
+
+/* =========================================================
+   QUESTIONS
+   ========================================================= */
+
+.question-card{
+  background:
+    linear-gradient(
+      145deg,
+      #74431f,
+      #8e562b
+    );
+
+  color:#fff;
+
+  border-color:#c9954a;
+}
+
+.q-number{
+  font-family:Impact,Arial Black,sans-serif;
+
+  color:var(--gold2);
+
+  font-size:clamp(22px,4vw,34px);
+}
+
+.q-heart{
+  color:#f27b89;
+
+  font-size:30px;
+
+  margin:8px;
+}
+
+.question-card h2{
+  font-size:clamp(22px,4vw,36px);
+
+  line-height:1.2;
+}
+
+#answerInput{
+  width:100%;
+
+  padding:17px 18px;
+
+  border:4px solid var(--gold);
+
+  border-radius:13px;
+
+  background:#0d1a25;
+
+  color:white;
+
+  outline:none;
+
+  font-size:20px;
+
+  margin:12px 0;
+}
+
+
+/* =========================================================
+   BOUTONS
+   ========================================================= */
+
+.wood-btn,
+.gold-btn,
+.hint-btn{
+  border:4px solid var(--gold);
+
+  border-radius:12px;
+
+  padding:14px 24px;
+
+  cursor:pointer;
+
+  font-family:Impact,Arial Black,sans-serif;
+
+  letter-spacing:.5px;
+
+  box-shadow:
+    0 7px 0 rgba(0,0,0,.35);
+}
+
+.wood-btn{
+  background:#70401f;
+  color:#fff;
+}
+
+.gold-btn{
+  background:
+    linear-gradient(
+      #d98b2e,
+      #a95b1f
+    );
+
+  color:#fff;
+
+  font-size:20px;
+}
+
+.hint-btn{
+  display:block;
+
+  margin:16px auto 0;
+
+  background:#354a62;
+
+  color:#fff;
+
+  border-color:#9cb4d1;
+}
+
+
+/* =========================================================
+   FEEDBACK
+   ========================================================= */
+
+.feedback{
+  min-height:30px;
+
+  margin:10px;
+
+  font-weight:700;
+}
+
+
+/* =========================================================
+   CARTE
+   ========================================================= */
+
+.map-card{
+  position:relative;
+
+  width:min(94%,850px);
+
+  background:#e9d79c;
+}
+
+.map-title{
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  font-family:Impact,Arial Black,sans-serif;
+
+  font-size:clamp(20px,4vw,32px);
+
+  margin-bottom:12px;
+}
+
+#mapCanvas{
+  display:block;
+
+  width:100%;
+
+  height:min(62vh,500px);
+
+  border:5px solid #81542b;
+
+  border-radius:12px;
+
+  background:#9ec58e;
+}
+
+.map-caption{
+  margin-top:12px;
+
+  font-weight:700;
+}
+
+.close-btn{
+  position:absolute;
+
+  right:10px;
+  top:8px;
+
+  width:42px;
+  height:42px;
+
+  border-radius:50%;
+
+  border:3px solid #8c5b2e;
+
+  background:#fff;
+
+  color:#5a351d;
+
+  font-size:28px;
+
+  z-index:2;
+}
+
+
+/* =========================================================
+   COFFRE
+   ========================================================= */
+
+.chest-scene{
+  position:relative;
+
+  height:230px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+}
+
+.chest-large{
+  font-size:130px;
+
+  filter:
+    drop-shadow(
+      0 8px 0 #402516
+    );
+
+  transition:
+    transform .5s;
+}
+
+.chest-large.open{
+  transform:
+    scale(1.18)
+    translateY(-8px)
+    rotate(-2deg);
+}
+
+.key-orbit{
+  position:absolute;
+
+  inset:0;
+}
+
+.key-orbit span{
+  position:absolute;
+
+  left:50%;
+  top:50%;
+
+  font-size:26px;
+
+  animation:
+    orbitKey 2.8s
+    ease-in-out
+    infinite;
+
+  animation-delay:
+    calc(var(--i)*-.08s);
+}
+
+@keyframes orbitKey{
+
+  0%,
+  100%{
+    transform:
+      rotate(calc(var(--i)*18deg))
+      translateX(40px)
+      rotate(calc(var(--i)*-18deg));
+
+    opacity:.35;
+  }
+
+  50%{
+    transform:
+      rotate(calc(var(--i)*18deg))
+      translateX(135px)
+      rotate(calc(var(--i)*-18deg));
+
+    opacity:1;
+  }
+
+}
+
+
+/* =========================================================
+   SOUVENIRS
+   ========================================================= */
+
+.memory-card{
+  text-align:left;
+}
+
+.memory-card h2,
+.memory-card>.pixel-stars{
+  text-align:center;
+}
+
+.memory-list{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
+  gap:10px;
+
+  margin:18px 0;
+}
+
+.memory-item{
+  display:flex;
+
+  gap:10px;
+
+  padding:12px;
+
+  border:2px solid #a27643;
+
+  border-radius:10px;
+
+  background:
+    rgba(255,244,199,.65);
+}
+
+.memory-item strong{
+  display:block;
+}
+
+.memory-item p{
+  margin:4px 0 0;
+
+  font-size:13px;
+}
+
+.memory-icon{
+  font-size:25px;
+}
+
+.reveal-memory{
+  animation:
+    memoryIn .45s both;
+}
+
+@keyframes memoryIn{
+
+  from{
+    opacity:0;
+    transform:translateY(12px);
+  }
+
+  to{
+    opacity:1;
+    transform:none;
+  }
+
+}
+
+
+/* =========================================================
+   TRANSITION
+   ========================================================= */
+
+.fade{
+  position:absolute;
+  inset:0;
+
+  background:#02060a;
+
+  z-index:100;
+
+  opacity:0;
+
+  pointer-events:none;
+
+  transition:
+    opacity .35s;
+}
+
+.fade.active{
+  opacity:1;
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.toast{
+  position:absolute;
+
+  z-index:70;
+
+  top:135px;
+  left:50%;
+
+  transform:
+    translate(-50%,-20px);
+
+  opacity:0;
+
+  transition:.25s;
+
+  background:#0c1c2a;
+
+  color:#fff;
+
+  border:3px solid var(--gold);
+
+  padding:12px 20px;
+
+  border-radius:14px;
+
+  font-weight:700;
+}
+
+.toast.visible{
+  opacity:1;
+
+  transform:
+    translate(-50%,0);
+}
+
+
+/* =========================================================
+   ÉCRAN TITRE
+   ========================================================= */
+
+.title-screen{
+  position:fixed;
+
+  inset:0;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  overflow:hidden;
+
+  background:
+    linear-gradient(
+      #55a8c7 0 48%,
+      #e6c873 48% 100%
+    );
+}
+
+.title-art{
+  position:absolute;
+
+  inset:0;
+
+  background:
+    radial-gradient(
+      circle at 78% 20%,
+      #ffe69a 0 42px,
+      transparent 44px
+    ),
+
+    radial-gradient(
+      ellipse at 20% 86%,
+      #26734b 0 130px,
+      transparent 132px
+    ),
+
+    linear-gradient(
+      180deg,
+      transparent 0 46%,
+      rgba(25,126,164,.75) 46% 57%,
+      transparent 57%
+    ),
+
+    repeating-linear-gradient(
+      175deg,
+      transparent 0 28px,
+      rgba(255,255,255,.12) 29px 33px,
+      transparent 34px 54px
+    );
+}
+
+.title-panel{
+  position:relative;
+
+  z-index:2;
+
+  width:min(88%,590px);
+
+  padding:38px 28px 30px;
+
+  text-align:center;
+
+  background:rgba(7,25,37,.94);
+
+  border:6px solid #e0ad49;
+
+  box-shadow:
+    0 0 0 3px #4c311d,
+    0 15px 0 rgba(0,0,0,.35);
+
+  color:white;
+}
+
+.eyebrow{
+  font-weight:900;
+
+  letter-spacing:2px;
+
+  color:#ffe39a;
+}
+
+.title-panel h1{
+  font-family:Georgia,serif;
+
+  font-size:clamp(45px,9vw,82px);
+
+  line-height:.82;
+
+  margin:18px 0;
+
+  color:#f4e5bd;
+
+  text-shadow:
+    5px 5px #000;
+}
+
+.title-panel h1 span{
+  color:#ef6977;
+}
+
+.title-panel p{
+  font-size:
+    clamp(17px,3vw,24px);
+}
+
+.title-panel .gold-btn{
+  margin:18px auto;
+}
+
+.tiny-copy{
+  opacity:.75;
+}
+
+.pixel-stars{
+  color:#f4ca62;
+
+  font-size:25px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media(max-width:650px){
+
+  .memory-list{
+    grid-template-columns:1fr;
+  }
+
+  .hud{
+    padding:8px 10px;
+  }
+
+  .brand{
+    font-size:18px;
+  }
+
+  .scene-badge{
+    top:82px;
+  }
+
+  .objective{
+    bottom:18px;
+  }
+
+  .question-card,
+  .chest-card,
+  .memory-card,
+  .map-card,
+  .paper{
+    padding:20px;
+  }
+
+  .dialog-box{
+    bottom:7%;
+    left:3%;
+    right:3%;
+  }
+
+}
