@@ -22,7 +22,7 @@ const GAME_DATA = {
        vers "100 raisons de t'aimer".
        -------------------------------------------------------- */
 
-    treasureLink: "",
+    treasureLink: "https://alanmartinpresta-lang.github.io/Celena-app/?utm_source=chatgpt.com",
 
 
     /* ========================================================
