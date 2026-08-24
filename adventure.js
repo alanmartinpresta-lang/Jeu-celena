@@ -1,45 +1,140 @@
 /*
-  MYSTERY LOVE ISLAND
-  ADVENTURE.JS — moteur de jeu + rendu pixel-art procédural
+============================================================
+MYSTERY LOVE ISLAND
+ADVENTURE.JS — VERSION PIXEL ADVENTURE
 
-  PRINCIPES :
-  - déplacement automatique uniquement
-  - aucune révélation du souvenir pendant l'aventure
-  - le bouton indice ne révèle que la réponse
-  - les explications des souvenirs restent secrètes
-  - les 20 souvenirs sont révélés uniquement à la fin
+- déplacement AUTOMATIQUE uniquement
+- caméra qui suit Celena
+- rendu pixel-art basse résolution
+- décors détaillés
+- Celena aventurière
+- animation de marche
+- aucun souvenir révélé pendant l'aventure
+- 20 clés
+- coffre final
+- révélation des souvenirs uniquement à la fin
+============================================================
 */
 
 "use strict";
 
 (() => {
 
-  const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-  const canvas = $("world");
+const canvas = $("world");
+if (!canvas) return;
 
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d", {
-    alpha: false
-  });
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
 
 
-  /* =========================================================
-     DIMENSIONS DU MONDE
-     ========================================================= */
+/* =========================================================
+   RENDU PIXEL
+========================================================= */
 
-  const W = 480;
-  const H = 270;
+const VW = 320;
+const VH = 180;
 
-  const WORLD_W = 4800;
+const buffer = document.createElement("canvas");
+buffer.width = VW;
+buffer.height = VH;
+
+const g = buffer.getContext("2d");
+g.imageSmoothingEnabled = false;
+
+function resize(){
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+
+    ctx.imageSmoothingEnabled = false;
+}
+
+addEventListener("resize", resize);
+resize();
 
 
-  /* =========================================================
-     NOMS DES ZONES
-     ========================================================= */
+/* =========================================================
+   PALETTE
+========================================================= */
 
-  const names = [
+const C = {
+
+    sky: "#65b7d2",
+    skyLight: "#91d4df",
+
+    sea: "#2389ad",
+    seaLight: "#54b5c7",
+    seaDark: "#176f92",
+
+    sand: "#e8c86d",
+    sandLight: "#f2d98b",
+    sandDark: "#c69e4d",
+
+    grass: "#3f7748",
+    grass2: "#5c9850",
+    grass3: "#79ad58",
+    grassDark: "#28583a",
+
+    tree: "#245a38",
+    tree2: "#397b46",
+    tree3: "#579451",
+
+    trunk: "#70442d",
+    trunkDark: "#4d3024",
+
+    stone: "#6d7780",
+    stoneLight: "#90979a",
+    stoneDark: "#4b565c",
+
+    wood: "#75451f",
+    woodLight: "#a96b32",
+    woodDark: "#4d2d1c",
+
+    gold: "#f6ca55",
+    goldLight: "#ffe9a0",
+    goldDark: "#bd862d",
+
+    skin: "#f2b58d",
+    skinLight: "#ffd0a9",
+    skinDark: "#c87863",
+
+    hair: "#33231f",
+    hairLight: "#52372c",
+
+    shirt: "#d85d76",
+    shirtDark: "#a83f59",
+
+    pants: "#263c5b",
+    pantsDark: "#182b43",
+
+    boot: "#202d42",
+
+    bag: "#7b4d2d",
+    bagLight: "#a86c37",
+
+    white: "#fff7dc",
+    black: "#17202a",
+
+    purple: "#67558f",
+    night: "#17213b"
+
+};
+
+
+/* =========================================================
+   JEU
+========================================================= */
+
+const WORLD_W = 6000;
+
+const names = [
 
     "LA PLAGE",
     "LA CRIQUE",
@@ -62,15 +157,14 @@
     "SOUS LES ÉTOILES",
     "LE COFFRE"
 
-  ];
+];
 
-
-  const types = [
+const environments = [
 
     "beach",
-    "beach",
+    "cove",
     "forest",
-    "forest",
+    "forest2",
     "mountain",
     "lake",
     "garden",
@@ -88,3777 +182,2742 @@
     "stars",
     "treasure"
 
-  ];
+];
 
+const targets = Array.from(
+    {length:20},
+    (_,i) => 260 + i * 285
+);
 
-  /* Position des 20 énigmes */
 
-  const targets = Array.from(
-    { length: 20 },
-    (_, i) => 250 + i * 225
-  );
+/* =========================================================
+   ETAT
+========================================================= */
 
+const S = {
 
-  /* =========================================================
-     ÉTAT DU JEU
-     ========================================================= */
+    started:false,
 
-  const S = {
+    scene:0,
 
-    started: false,
+    keys:0,
 
-    scene: 0,
+    x:70,
 
-    keys: 0,
+    target:260,
 
-    x: 72,
+    camera:0,
 
-    target: 250,
+    walking:false,
 
-    walking: false,
+    walkFrame:0,
 
-    frame: 0,
+    walkClock:0,
 
-    question: false,
+    arriving:false,
 
-    ending: false,
+    question:false,
 
-    introDone: false,
+    ending:false,
 
-    arriving: false,
+    introDone:false,
 
-    last: 0,
+    lines:[],
 
-    lines: [],
+    lineIndex:0,
 
-    li: 0,
+    dialogDone:null,
 
-    done: null,
+    lastTime:0,
 
-    memoryTimer: null
+    mapOpen:false
 
-  };
+};
 
 
-  /* =========================================================
-     PALETTE
-     ========================================================= */
+/* =========================================================
+   UTILITAIRES DOM
+========================================================= */
 
-  const COLORS = {
+function show(id,on=true){
 
-    ink: "#102033",
+    const el=$(id);
 
-    deep: "#07131f",
-
-    gold: "#f6cf67",
-
-    cream: "#fff1bd",
-
-    sand: "#e9cc7a",
-
-    sea: "#3f9cc0",
-
-    sea2: "#76c5d5",
-
-    leaf: "#3d7e4c",
-
-    leaf2: "#5b9854",
-
-    trunk: "#6b432d",
-
-    skin: "#efb28b",
-
-    hair: "#34231f",
-
-    pink: "#d56678",
-
-    blue: "#263b5b"
-
-  };
-
-
-  /* =========================================================
-     CANVAS
-     ========================================================= */
-
-  function resize() {
-
-    const d =
-      Math.min(
-        window.devicePixelRatio || 1,
-        2
-      );
-
-    canvas.width =
-      Math.floor(
-        innerWidth * d
-      );
-
-    canvas.height =
-      Math.floor(
-        innerHeight * d
-      );
-
-    canvas.style.imageRendering =
-      "pixelated";
-
-    ctx.imageSmoothingEnabled =
-      false;
-
-  }
-
-
-  addEventListener(
-    "resize",
-    resize
-  );
-
-  resize();
-
-
-  /* =========================================================
-     UTILITAIRES
-     ========================================================= */
-
-  function show(
-    id,
-    on = true
-  ) {
-
-    $(id)?.classList.toggle(
-      "hidden",
-      !on
-    );
-
-  }
-
-
-  function text(
-    id,
-    value
-  ) {
-
-    if ($(id))
-      $(id).textContent = value;
-
-  }
-
-
-  function audio(
-    name,
-    argument
-  ) {
-
-    try {
-
-      if (
-        window.AudioEngine &&
-        typeof window.AudioEngine[name] ===
-        "function"
-      ) {
-
-        window.AudioEngine[name](
-          argument
-        );
-
-      }
-
-    } catch (e) {}
-
-  }
-
-
-  function norm(value) {
-
-    return String(value || "")
-
-      .toLowerCase()
-
-      .normalize("NFD")
-
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-
-      .replace(
-        /[^a-z0-9]+/g,
-        " "
-      )
-
-      .trim();
-
-  }
-
-
-  /* =========================================================
-     HUD
-     ========================================================= */
-
-  function hud() {
-
-    text(
-      "keyCounter",
-      `🔑 ${S.keys}/20`
-    );
-
-    text(
-      "sceneBadge",
-      names[
-        Math.min(
-          S.scene,
-          19
-        )
-      ]
-    );
-
-    text(
-      "mapKeys",
-      `${S.keys} / 20`
-    );
-
-    text(
-
-      "objective",
-
-      S.scene === 19
-
-        ? "Le dernier mystère t'attend…"
-
-        : "Celena marche automatiquement vers le prochain mystère."
-
-    );
-
-  }
-
-
-  /* =========================================================
-     DIALOGUES
-     ========================================================= */
-
-  function say(
-    lines,
-    done
-  ) {
-
-    S.lines =
-      lines;
-
-    S.li =
-      0;
-
-    S.done =
-      done ||
-      null;
-
-    show(
-      "dialog",
-      true
-    );
-
-    text(
-      "dialogText",
-      lines[0] || ""
-    );
-
-  }
-
-
-  function next() {
-
-    if (!S.lines.length)
-      return;
-
-    S.li++;
-
-    audio(
-      "button"
-    );
-
-
-    if (
-      S.li >=
-      S.lines.length
-    ) {
-
-      show(
-        "dialog",
-        false
-      );
-
-      const done =
-        S.done;
-
-      S.done =
-        null;
-
-      S.lines =
-        [];
-
-      if (done)
-        done();
-
+    if(el){
+        el.classList.toggle("hidden",!on);
     }
 
-    else {
+}
 
-      text(
-        "dialogText",
-        S.lines[S.li]
-      );
+function setText(id,value){
 
+    const el=$(id);
+
+    if(el){
+        el.textContent=value;
     }
 
-  }
+}
+
+function play(name,arg){
+
+    try{
+
+        if(
+            window.AudioEngine &&
+            typeof window.AudioEngine[name] === "function"
+        ){
+
+            window.AudioEngine[name](arg);
+
+        }
+
+    }catch(e){}
+
+}
+
+function norm(v){
+
+    return String(v || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .replace(/[^a-z0-9]+/g," ")
+        .trim();
+
+}
 
 
-  /* =========================================================
-     DÉMARRAGE
-     ========================================================= */
+/* =========================================================
+   HUD
+========================================================= */
 
-  function start() {
+function updateHUD(){
 
-    if (S.started)
-      return;
-
-    S.started =
-      true;
-
-    show(
-      "titleScreen",
-      false
+    setText(
+        "keyCounter",
+        `🔑 ${S.keys}/20`
     );
 
-    show(
-      "gameScreen",
-      true
+    setText(
+        "sceneBadge",
+        names[S.scene] || "LE COFFRE"
     );
 
-    audio(
-      "resume"
+    setText(
+        "mapKeys",
+        `${S.keys} / 20`
     );
 
-    audio(
-      "startAmbience",
-      "beach"
-    );
+    if(S.scene >= 19){
 
-    hud();
-
-
-    say(
-
-      [
-        "Mais qu'est-ce que je fais ici ?"
-      ],
-
-      () => {
-
-        S.target =
-          250;
-
-        S.walking =
-          true;
-
-      }
-
-    );
-
-  }
-
-
-  /* =========================================================
-     ARRIVÉE À UNE DESTINATION
-     ========================================================= */
-
-  function arrive() {
-
-    if (S.arriving)
-      return;
-
-    S.arriving =
-      true;
-
-    S.walking =
-      false;
-
-
-    /*
-      PREMIÈRE ARRIVÉE :
-      bouteille + carte.
-    */
-
-    if (!S.introDone) {
-
-      S.introDone =
-        true;
-
-
-      say(
-
-        [
-
-          "Une bouteille à la mer… échouée sur le sable.",
-
-          "Elle l'ouvre. À l'intérieur, une vieille carte au trésor.",
-
-          "« Trouve les 20 clés pour découvrir le trésor le plus inestimable. »"
-
-        ],
-
-        () => {
-
-          show(
-            "mapIntro",
-            true
-          );
-
-          text(
+        setText(
             "objective",
-            "La carte est trouvée. La chasse aux 20 clés commence."
-          );
-
-        }
-
-      );
-
-      return;
-
-    }
-
-
-    openQuestion();
-
-  }
-
-
-  /* =========================================================
-     NOUVELLE ZONE
-     ========================================================= */
-
-  function beginScene(i) {
-
-    if (
-      i < 0 ||
-      i >= 20
-    )
-      return;
-
-
-    S.scene =
-      i;
-
-
-    S.x =
-      Math.max(
-        48,
-        targets[i] - 165
-      );
-
-
-    S.target =
-      targets[i];
-
-
-    S.walking =
-      true;
-
-
-    S.arriving =
-      false;
-
-
-    hud();
-
-
-    audio(
-      "startAmbience",
-      types[i]
-    );
-
-  }
-
-
-  /* =========================================================
-     QUESTION
-     ========================================================= */
-
-  function openQuestion() {
-
-    if (
-      S.question ||
-      S.ending
-    )
-      return;
-
-
-    const q =
-      GAME_DATA.questions[
-        S.scene
-      ];
-
-
-    if (!q)
-      return;
-
-
-    S.question =
-      true;
-
-
-    show(
-      "questionScreen",
-      true
-    );
-
-
-    text(
-      "questionNumber",
-      `ÉNIGME ${q.id}/20`
-    );
-
-
-    text(
-      "questionText",
-      q.question
-    );
-
-
-    text(
-      "answerFeedback",
-      ""
-    );
-
-
-    if (
-      $("answerInput")
-    ) {
-
-      $("answerInput").value =
-        "";
-
-    }
-
-
-    setTimeout(
-      () =>
-        $("answerInput")?.focus(),
-      120
-    );
-
-  }
-
-
-  /* =========================================================
-     INDICE
-
-     IMPORTANT :
-     L'explication du souvenir NE DOIT PAS être montrée ici.
-     ========================================================= */
-
-  function reveal() {
-
-    const q =
-      GAME_DATA.questions[
-        S.scene
-      ];
-
-
-    if (!q)
-      return;
-
-
-    text(
-
-      "answerFeedback",
-
-      `💡 Réponse : ${q.answer}`
-
-    );
-
-  }
-
-
-  /* =========================================================
-     VALIDATION
-     ========================================================= */
-
-  function validate() {
-
-    if (!S.question)
-      return;
-
-
-    const q =
-      GAME_DATA.questions[
-        S.scene
-      ];
-
-
-    if (!q)
-      return;
-
-
-    const v =
-      norm(
-        $("answerInput")?.value
-      );
-
-
-    const accepted =
-      (
-        q.acceptedAnswers ||
-        [q.answer]
-      )
-        .map(norm);
-
-
-    const ok =
-
-      accepted.includes(v)
-
-      ||
-
-      norm(q.answer) === v;
-
-
-    if (!ok) {
-
-      text(
-
-        "answerFeedback",
-
-        "❌ Mauvaise réponse. Essaie encore."
-
-      );
-
-
-      audio(
-        "wrongAnswer"
-      );
-
-
-      return;
-
-    }
-
-
-    /* ================================================
-       BONNE RÉPONSE
-       ================================================ */
-
-    S.question =
-      false;
-
-
-    S.keys++;
-
-
-    show(
-      "questionScreen",
-      false
-    );
-
-
-    audio(
-      "keyFound"
-    );
-
-
-    hud();
-
-
-    /*
-      TRÈS IMPORTANT :
-
-      q.explanation N'EST PAS UTILISÉ ICI.
-
-      Le joueur obtient uniquement la clé.
-      Le souvenir reste secret jusqu'au coffre.
-    */
-
-    say(
-
-      [
-        `Bravo ! 🔑 Clé ${S.keys}/20 obtenue.`
-      ],
-
-      () => {
-
-        if (
-          S.keys === 20
-        ) {
-
-          openChest();
-
-        }
-
-        else {
-
-          beginScene(
-            S.scene + 1
-          );
-
-        }
-
-      }
-
-    );
-
-  }
-
-
-  /* =========================================================
-     COFFRE FINAL
-     ========================================================= */
-
-  function openChest() {
-
-    S.ending =
-      true;
-
-    S.walking =
-      false;
-
-
-    show(
-      "chestScreen",
-      true
-    );
-
-
-    audio(
-      "startAmbience",
-      "treasure"
-    );
-
-
-    const orbit =
-      $("keyOrbit");
-
-
-    if (!orbit)
-      return;
-
-
-    orbit.innerHTML =
-      "";
-
-
-    for (
-      let i = 0;
-      i < 20;
-      i++
-    ) {
-
-      const k =
-        document.createElement(
-          "span"
+            "Le coffre mystérieux t'attend."
         );
 
+    }else{
 
-      k.textContent =
-        "🔑";
-
-
-      k.style.setProperty(
-        "--i",
-        i
-      );
-
-
-      k.className =
-        "orbit-key";
-
-
-      orbit.appendChild(
-        k
-      );
+        setText(
+            "objective",
+            "Celena marche automatiquement vers le prochain mystère."
+        );
 
     }
 
-  }
+}
 
 
-  /* =========================================================
-     OUVERTURE DU COFFRE
-     ========================================================= */
+/* =========================================================
+   DIALOGUE
+========================================================= */
 
-  function chest() {
+function dialog(lines,done){
 
-    audio(
-      "chestOpen"
+    S.lines = lines || [];
+    S.lineIndex = 0;
+    S.dialogDone = done || null;
+
+    show("dialog",true);
+
+    setText(
+        "dialogText",
+        S.lines[0] || ""
     );
 
+}
 
-    $("chestGraphic")
-      ?.classList
-      .add("open");
+function nextDialog(){
 
+    if(!S.lines.length) return;
 
-    setTimeout(
+    S.lineIndex++;
 
-      () => {
+    play("button");
 
-        show(
-          "chestScreen",
-          false
-        );
+    if(S.lineIndex >= S.lines.length){
 
+        show("dialog",false);
 
-        memories();
+        const done = S.dialogDone;
 
-      },
+        S.lines=[];
+        S.dialogDone=null;
 
-      1800
-
-    );
-
-  }
-
-
-  /* =========================================================
-     RÉVÉLATION FINALE DES 20 SOUVENIRS
-     ========================================================= */
-
-  function memories() {
-
-    const list =
-      $("memoryList");
-
-
-    if (!list)
-      return;
-
-
-    list.innerHTML =
-      "";
-
-
-    show(
-      "memoriesScreen",
-      true
-    );
-
-
-    $("treasureBtn")
-      ?.classList
-      .add("hidden");
-
-
-    const memories =
-      GAME_DATA.memories
-        .slice(0,20);
-
-
-    let i =
-      0;
-
-
-    function addOne() {
-
-      if (
-        i >=
-        memories.length
-      ) {
-
-        $("treasureBtn")
-          ?.classList
-          .remove("hidden");
+        if(done) done();
 
         return;
+    }
 
-      }
+    setText(
+        "dialogText",
+        S.lines[S.lineIndex]
+    );
 
-
-      const m =
-        memories[i];
-
-
-      const article =
-        document.createElement(
-          "article"
-        );
+}
 
 
-      article.className =
-        "memory-item reveal-memory memory-reveal-in";
+/* =========================================================
+   DESSIN PIXEL — OUTILS
+========================================================= */
+
+function rect(x,y,w,h,c){
+
+    g.fillStyle=c;
+    g.fillRect(
+        Math.round(x),
+        Math.round(y),
+        Math.round(w),
+        Math.round(h)
+    );
+
+}
+
+function poly(points,c){
+
+    g.fillStyle=c;
+    g.beginPath();
+
+    g.moveTo(points[0][0],points[0][1]);
+
+    for(let i=1;i<points.length;i++){
+        g.lineTo(points[i][0],points[i][1]);
+    }
+
+    g.closePath();
+    g.fill();
+
+}
+
+function circle(x,y,r,c){
+
+    g.fillStyle=c;
+    g.beginPath();
+    g.arc(x,y,r,0,Math.PI*2);
+    g.fill();
+
+}
+
+function line(x1,y1,x2,y2,c,w=1){
+
+    g.strokeStyle=c;
+    g.lineWidth=w;
+    g.beginPath();
+    g.moveTo(x1,y1);
+    g.lineTo(x2,y2);
+    g.stroke();
+
+}
 
 
-      article.innerHTML =
+/* =========================================================
+   CIEL
+========================================================= */
 
-        `
+function sky(time){
 
-        <span class="memory-icon">
+    const e = environments[S.scene];
 
-          ${m.icon || "♥"}
+    let top=C.sky;
+    let bottom=C.skyLight;
 
-        </span>
+    if(
+        e==="snow" ||
+        e==="stars" ||
+        e==="christmas"
+    ){
 
-        <div>
-
-          <strong>
-
-            ${i + 1}.
-            ${m.titleShort || m.title}
-
-          </strong>
-
-          <p>
-
-            ${m.text || ""}
-
-          </p>
-
-        </div>
-
-        `;
-
-
-      list.appendChild(
-        article
-      );
-
-
-      i++;
-
-
-      setTimeout(
-        addOne,
-        180
-      );
+        top="#263252";
+        bottom="#596a8c";
 
     }
 
+    if(
+        e==="cinema" ||
+        e==="cannes"
+    ){
 
-    setTimeout(
-      addOne,
-      700
-    );
-
-
-    $("treasureBtn").onclick =
-
-      () =>
-        location.href =
-          GAME_DATA.treasureLink;
-
-  }
-
-
-  /* =========================================================
-     OUTILS PIXEL ART
-     ========================================================= */
-
-  function px(
-    x,
-    y,
-    w,
-    h,
-    c
-  ) {
-
-    ctx.fillStyle =
-      c;
-
-
-    ctx.fillRect(
-
-      Math.round(x),
-      Math.round(y),
-      Math.round(w),
-      Math.round(h)
-
-    );
-
-  }
-
-
-  function poly(
-    points,
-    c
-  ) {
-
-    ctx.fillStyle =
-      c;
-
-
-    ctx.beginPath();
-
-
-    ctx.moveTo(
-      points[0],
-      points[1]
-    );
-
-
-    for (
-      let i = 2;
-      i < points.length;
-      i += 2
-    ) {
-
-      ctx.lineTo(
-        points[i],
-        points[i + 1]
-      );
+        top="#6aa7c4";
+        bottom="#c6d8c2";
 
     }
 
+    const grad=g.createLinearGradient(0,0,0,VH);
 
-    ctx.closePath();
+    grad.addColorStop(0,top);
+    grad.addColorStop(1,bottom);
 
-    ctx.fill();
+    g.fillStyle=grad;
+    g.fillRect(0,0,VW,VH);
 
-  }
+}
 
 
-  function circle(
-    x,
-    y,
-    r,
-    c
-  ) {
+/* =========================================================
+   SOLEIL / LUNE
+========================================================= */
 
-    ctx.fillStyle =
-      c;
+function celestial(){
 
+    const e=environments[S.scene];
 
-    ctx.beginPath();
+    if(
+        e==="stars" ||
+        e==="christmas" ||
+        e==="snow"
+    ){
 
+        circle(260,27,14,"#f5edbd");
 
-    ctx.arc(
-      x,
-      y,
-      r,
-      0,
-      Math.PI * 2
-    );
+        for(let i=0;i<35;i++){
 
+            const x=(i*83)%VW;
+            const y=8+((i*37)%65);
 
-    ctx.fill();
-
-  }
-
-
-  function line(
-    x1,
-    y1,
-    x2,
-    y2,
-    c,
-    w = 2
-  ) {
-
-    ctx.strokeStyle =
-      c;
-
-
-    ctx.lineWidth =
-      w;
-
-
-    ctx.beginPath();
-
-
-    ctx.moveTo(
-      x1,
-      y1
-    );
-
-
-    ctx.lineTo(
-      x2,
-      y2
-    );
-
-
-    ctx.stroke();
-
-  }
-
-
-  /* =========================================================
-     ÉTOILES
-     ========================================================= */
-
-  function stars(
-    seed,
-    count,
-    top,
-    bottom
-  ) {
-
-    for (
-      let i = 0;
-      i < count;
-      i++
-    ) {
-
-      const x =
-        (
-          seed * 31 +
-          i * 83
-        ) % WORLD_W;
-
-
-      const y =
-        top +
-        (
-          (
-            i * 47 +
-            seed * 17
-          )
-          %
-          Math.max(
-            1,
-            bottom - top
-          )
-        );
-
-
-      const s =
-        i % 3 === 0
-          ? 2
-          : 1;
-
-
-      px(
-
-        x,
-        y,
-        s,
-        s,
-
-        i % 4 === 0
-          ? COLORS.gold
-          : COLORS.cream
-
-      );
-
-    }
-
-  }
-
-
-  /* =========================================================
-     NUAGES
-     ========================================================= */
-
-  function clouds(
-    offset
-  ) {
-
-    for (
-      let i = 0;
-      i < 7;
-      i++
-    ) {
-
-      const x =
-        offset +
-        i * 260;
-
-
-      circle(
-        x,
-        55,
-        13,
-        "#dff4f4"
-      );
-
-
-      circle(
-        x + 15,
-        51,
-        18,
-        "#eaf8f8"
-      );
-
-
-      circle(
-        x + 34,
-        57,
-        11,
-        "#dff4f4"
-      );
-
-
-      px(
-        x - 2,
-        58,
-        39,
-        9,
-        "#e5f6f5"
-      );
-
-    }
-
-  }
-
-
-  /* =========================================================
-     PALMIER
-     ========================================================= */
-
-  function palm(
-    x,
-    base,
-    s = 1
-  ) {
-
-    poly(
-
-      [
-        x - 5*s,
-        base,
-
-        x + 6*s,
-        base,
-
-        x + 14*s,
-        base - 92*s,
-
-        x + 3*s,
-        base - 96*s
-
-      ],
-
-      "#70472f"
-
-    );
-
-
-    poly(
-
-      [
-        x + 8*s,
-        base - 92*s,
-
-        x - 45*s,
-        base - 120*s,
-
-        x - 52*s,
-        base - 114*s,
-
-        x + 3*s,
-        base - 88*s
-
-      ],
-
-      "#3b7e48"
-
-    );
-
-
-    poly(
-
-      [
-        x + 9*s,
-        base - 92*s,
-
-        x + 55*s,
-        base - 125*s,
-
-        x + 62*s,
-        base - 118*s,
-
-        x + 16*s,
-        base - 86*s
-
-      ],
-
-      "#4e914d"
-
-    );
-
-
-    poly(
-
-      [
-        x + 8*s,
-        base - 94*s,
-
-        x + 28*s,
-        base - 145*s,
-
-        x + 35*s,
-        base - 145*s,
-
-        x + 16*s,
-        base - 91*s
-
-      ],
-
-      "#4a8d4a"
-
-    );
-
-
-    poly(
-
-      [
-        x + 6*s,
-        base - 94*s,
-
-        x - 5*s,
-        base - 144*s,
-
-        x + 2*s,
-        base - 146*s,
-
-        x + 13*s,
-        base - 94*s
-
-      ],
-
-      "#5b9b50"
-
-    );
-
-  }
-
-
-  /* =========================================================
-     ARBRE
-     ========================================================= */
-
-  function broadleafTree(
-    x,
-    base,
-    s = 1
-  ) {
-
-    px(
-      x - 7*s,
-      base - 78*s,
-      14*s,
-      78*s,
-      "#66432d"
-    );
-
-
-    circle(
-      x - 25*s,
-      base - 92*s,
-      26*s,
-      "#2f7042"
-    );
-
-
-    circle(
-      x + 2*s,
-      base - 105*s,
-      32*s,
-      "#3e8248"
-    );
-
-
-    circle(
-      x + 30*s,
-      base - 88*s,
-      25*s,
-      "#4d914d"
-    );
-
-
-    circle(
-      x - 2*s,
-      base - 125*s,
-      22*s,
-      "#5b9a50"
-    );
-
-  }
-
-
-  /* =========================================================
-     MONTAGNES
-     ========================================================= */
-
-  function mountainRange(
-    offset,
-    snowy = false
-  ) {
-
-    for (
-      let i = 0;
-      i < 7;
-      i++
-    ) {
-
-      const x =
-        offset +
-        i * 360;
-
-
-      poly(
-
-        [
-          x,
-          205,
-
-          x + 120,
-          80,
-
-          x + 240,
-          205
-
-        ],
-
-        i % 2
-          ? "#416b6d"
-          : "#355c61"
-
-      );
-
-
-      poly(
-
-        [
-          x + 120,
-          80,
-
-          x + 88,
-          118,
-
-          x + 120,
-          105,
-
-          x + 154,
-          120
-
-        ],
-
-        snowy
-          ? "#f4f1e1"
-          : "#5b7776"
-
-      );
-
-
-      poly(
-
-        [
-          x + 120,
-          80,
-
-          x + 145,
-          205,
-
-          x + 240,
-          205
-
-        ],
-
-        "#2e5359"
-
-      );
-
-    }
-
-  }
-
-
-  /* =========================================================
-     EAU
-     ========================================================= */
-
-  function water(
-    x,
-    y,
-    w,
-    h
-  ) {
-
-    px(
-      x,
-      y,
-      w,
-      h,
-      COLORS.sea
-    );
-
-
-    for (
-      let i = 0;
-      i < 7;
-      i++
-    ) {
-
-      const yy =
-        y +
-        12 +
-        i * 19;
-
-
-      for (
-        let j = 0;
-        j < 8;
-        j++
-      ) {
-
-        line(
-
-          x + j*110,
-          yy,
-
-          x + j*110 + 55,
-          yy + 3,
-
-          "#73c7d7",
-          2
-
-        );
-
-      }
-
-    }
-
-  }
-
-
-  /* =========================================================
-     ENVIRONNEMENTS
-     ========================================================= */
-
-  function drawEnvironment(
-    type,
-    cam
-  ) {
-
-    let sky =
-      "#79bfd4";
-
-
-    let ground =
-      COLORS.sand;
-
-
-    if (
-      type === "forest" ||
-      type === "garden" ||
-      type === "village"
-    ) {
-
-      sky =
-        "#6a9b8c";
-
-      ground =
-        "#507b49";
-
-    }
-
-
-    if (
-      type === "mountain" ||
-      type === "lake" ||
-      type === "waterfall"
-    ) {
-
-      sky =
-        "#6f9fb3";
-
-      ground =
-        "#6f8069";
-
-    }
-
-
-    if (
-
-      [
-
-        "snow",
-        "christmas",
-        "memory",
-        "iris",
-        "stars",
-        "treasure"
-
-      ].includes(type)
-
-    ) {
-
-      sky =
-        "#172743";
-
-      ground =
-        "#493d50";
-
-    }
-
-
-    px(
-      0,
-      0,
-      WORLD_W,
-      H,
-      sky
-    );
-
-
-    /* =====================================================
-       PLAGE / CANNES / PARC
-       ===================================================== */
-
-    if (
-
-      [
-        "beach",
-        "cannes",
-        "park"
-      ].includes(type)
-
-    ) {
-
-      water(
-        0,
-        155,
-        WORLD_W,
-        78
-      );
-
-
-      px(
-        0,
-        233,
-        WORLD_W,
-        37,
-        ground
-      );
-
-
-      clouds(
-        cam - 80
-      );
-
-
-      for (
-        let i = 0;
-        i < 18;
-        i++
-      ) {
-
-        palm(
-          cam - 120 + i*290,
-          258,
-          .65 +
-          (i%3)*.08
-        );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       FORÊT / JARDIN / VILLAGE
-       ===================================================== */
-
-    else if (
-
-      type === "forest" ||
-      type === "garden" ||
-      type === "village"
-
-    ) {
-
-      px(
-        0,
-        205,
-        WORLD_W,
-        65,
-        ground
-      );
-
-
-      for (
-        let i = 0;
-        i < 24;
-        i++
-      ) {
-
-        broadleafTree(
-
-          cam - 80 + i*220,
-          245,
-
-          .62 +
-          (i%4)*.08
-
-        );
-
-      }
-
-
-      if (
-        type === "garden"
-      ) {
-
-        for (
-          let i = 0;
-          i < 14;
-          i++
-        ) {
-
-          const x =
-            cam +
-            40 +
-            i*170;
-
-
-          circle(
-            x,
-            229,
-            5,
-            "#e9788c"
-          );
-
-
-          circle(
-            x + 8,
-            232,
-            4,
-            "#f5c55f"
-          );
-
-        }
-
-      }
-
-
-      if (
-        type === "village"
-      ) {
-
-        for (
-          let i = 0;
-          i < 7;
-          i++
-        ) {
-
-          const x =
-            cam +
-            30 +
-            i*190;
-
-
-          px(
-            x,
-            177,
-            72,
-            62,
-            "#c68b5d"
-          );
-
-
-          poly(
-
-            [
-              x - 8,
-              177,
-
-              x + 36,
-              145,
-
-              x + 80,
-              177
-
-            ],
-
-            "#7a4936"
-
-          );
-
-
-          px(
-            x + 12,
-            192,
-            15,
-            16,
-            "#6d4932"
-          );
-
-
-          px(
-            x + 45,
-            190,
-            12,
-            11,
-            "#e6c76d"
-          );
-
-        }
-
-      }
-
-    }
-
-
-    /* =====================================================
-       MONTAGNES / CASCADE
-       ===================================================== */
-
-    else if (
-
-      type === "mountain" ||
-      type === "waterfall"
-
-    ) {
-
-      px(
-        0,
-        205,
-        WORLD_W,
-        65,
-        ground
-      );
-
-
-      mountainRange(
-        cam - 120,
-        type === "mountain"
-      );
-
-
-      if (
-        type === "waterfall"
-      ) {
-
-        px(
-          cam + 650,
-          130,
-          42,
-          75,
-          "#9fe0e4"
-        );
-
-
-        px(
-          cam + 662,
-          130,
-          9,
-          75,
-          "#eaffff"
-        );
-
-
-        poly(
-
-          [
-            cam + 650,
-            205,
-
-            cam + 690,
-            205,
-
-            cam + 720,
-            240,
-
-            cam + 620,
-            240
-
-          ],
-
-          "#62a5a2"
-
-        );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       LAC
-       ===================================================== */
-
-    else if (
-      type === "lake"
-    ) {
-
-      px(
-        0,
-        195,
-        WORLD_W,
-        75,
-        "#557c72"
-      );
-
-
-      water(
-        0,
-        145,
-        WORLD_W,
-        70
-      );
-
-
-      mountainRange(
-        cam - 180,
-        false
-      );
-
-
-      for (
-        let i = 0;
-        i < 8;
-        i++
-      ) {
-
-        broadleafTree(
-          cam + i*280,
-          258,
-          .7
-        );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       VILLE / CINÉMA
-       ===================================================== */
-
-    else if (
-
-      type === "city" ||
-      type === "cinema"
-
-    ) {
-
-      px(
-        0,
-        215,
-        WORLD_W,
-        55,
-        "#55545e"
-      );
-
-
-      for (
-        let i = 0;
-        i < 12;
-        i++
-      ) {
-
-        const x =
-          cam +
-          i*150;
-
-
-        const bh =
-          65 +
-          (i%4)*25;
-
-
-        px(
-          x,
-          215-bh,
-          80,
-          bh,
-          "#33465a"
-        );
-
-
-        for (
-          let r = 0;
-          r < 3;
-          r++
-        ) {
-
-          for (
-            let c = 0;
-            c < 3;
-            c++
-          ) {
-
-            px(
-
-              x + 12 + c*20,
-              230-bh + r*20,
-
-              8,
-              10,
-
-              "#f0ca66"
-
+            rect(
+                x,
+                y,
+                1,
+                1,
+                i%3===0 ? C.gold : C.white
             );
 
-          }
-
         }
 
-      }
+    }else{
 
-
-      if (
-        type === "cinema"
-      ) {
-
-        px(
-          cam + 720,
-          150,
-          170,
-          65,
-          "#8a3e55"
+        circle(
+            267,
+            29,
+            15,
+            "#ffe5a1"
         );
 
-
-        px(
-          cam + 740,
-          164,
-          130,
-          35,
-          "#241a25"
+        circle(
+            271,
+            25,
+            15,
+            "rgba(255,255,255,.12)"
         );
-
-
-        for (
-          let i = 0;
-          i < 8;
-          i++
-        ) {
-
-          px(
-            cam + 748 + i*15,
-            169,
-            7,
-            4,
-            "#f2c96d"
-          );
-
-        }
-
-      }
 
     }
 
-
-    /* =====================================================
-       NEIGE
-       ===================================================== */
-
-    else if (
-      type === "snow"
-    ) {
-
-      px(
-        0,
-        210,
-        WORLD_W,
-        60,
-        "#e7e4da"
-      );
+}
 
 
-      mountainRange(
-        cam - 120,
-        true
-      );
+/* =========================================================
+   NUAGES
+========================================================= */
 
+function clouds(){
 
-      for (
-        let i = 0;
-        i < 100;
-        i++
-      ) {
+    const shift = -(S.camera * .08)%400;
 
-        const x =
-          (
-            cam*.3 +
-            i*53
-          ) % WORLD_W;
+    for(let i=0;i<5;i++){
 
+        const x=shift+i*105;
 
-        const y =
-          35 +
-          (i*37)%180;
-
-
-        px(
-          x,
-          y,
-          2,
-          2,
-          "#fff"
-        );
-
-      }
-
-
-      for (
-        let i = 0;
-        i < 12;
-        i++
-      ) {
-
-        broadleafTree(
-          cam + i*270,
-          258,
-          .6
-        );
-
-      }
+        circle(x,34,8,"rgba(255,255,255,.65)");
+        circle(x+8,31,11,"rgba(255,255,255,.65)");
+        circle(x+18,35,7,"rgba(255,255,255,.65)");
 
     }
 
+}
 
-    /* =====================================================
-       NOËL
-       ===================================================== */
 
-    else if (
-      type === "christmas"
-    ) {
+/* =========================================================
+   MER
+========================================================= */
 
-      px(
+function sea(){
+
+    rect(0,73,VW,65,C.sea);
+
+    for(let y=78;y<136;y+=11){
+
+        const off=(S.camera*.18+y)%30;
+
+        for(let x=-40;x<VW+40;x+=42){
+
+            line(
+                x-off,
+                y,
+                x+18-off,
+                y,
+                C.seaLight,
+                1
+            );
+
+        }
+
+    }
+
+    rect(
         0,
-        205,
-        WORLD_W,
+        73,
+        VW,
+        3,
+        "rgba(255,255,255,.25)"
+    );
+
+}
+
+
+/* =========================================================
+   PLAGE
+========================================================= */
+
+function beachGround(){
+
+    rect(
+        0,
+        115,
+        VW,
         65,
-        "#dfe7ed"
-      );
+        C.sand
+    );
 
+    for(let i=0;i<25;i++){
 
-      for (
-        let i = 0;
-        i < 8;
-        i++
-      ) {
+        const x=(i*47 - S.camera*.3)%VW;
 
-        const x =
-          cam +
-          60 +
-          i*300;
-
-
-        poly(
-
-          [
+        rect(
             x,
-            205,
-
-            x + 45,
-            105,
-
-            x + 90,
-            205
-
-          ],
-
-          "#28563e"
-
+            125+(i%4)*9,
+            2,
+            1,
+            i%2 ? C.sandDark : C.sandLight
         );
-
-
-        poly(
-
-          [
-            x + 45,
-            105,
-
-            x + 65,
-            155,
-
-            x + 25,
-            155
-
-          ],
-
-          "#34714d"
-
-        );
-
-
-        for (
-          let j = 0;
-          j < 6;
-          j++
-        ) {
-
-          circle(
-
-            x + 22 + j*8,
-            165 + (j%2)*13,
-            3,
-
-            j%2
-              ? "#f06f78"
-              : "#f4cc5c"
-
-          );
-
-        }
-
-      }
-
-
-      stars(
-        16,
-        35,
-        25,
-        150
-      );
 
     }
 
+}
 
-    /* =====================================================
-       SOUVENIR / IRIS
-       ===================================================== */
 
-    else if (
+/* =========================================================
+   PALMIER DÉTAILLÉ
+========================================================= */
 
-      type === "memory" ||
-      type === "iris"
+function palm(x,y,scale=1){
 
-    ) {
+    const trunkW=7*scale;
 
-      px(
-        0,
-        205,
-        WORLD_W,
-        65,
-        "#59455d"
-      );
+    poly([
+        [x-trunkW,y],
+        [x+trunkW,y],
+        [x+4*scale,y-58*scale],
+        [x-3*scale,y-58*scale]
+    ],C.trunk);
 
-
-      stars(
-        22,
-        45,
-        28,
-        180
-      );
-
-
-      for (
-        let i = 0;
-        i < 9;
-        i++
-      ) {
-
-        const x =
-          cam +
-          50 +
-          i*280;
-
-
-        circle(
-          x,
-          192,
-          35,
-          "#6b4b75"
-        );
-
-
-        circle(
-          x - 9,
-          190,
-          9,
-          "#f1b18b"
-        );
-
-
-        circle(
-          x + 9,
-          190,
-          9,
-          "#f1b18b"
-        );
-
-
-        circle(
-          x,
-          190,
-          12,
-          "#d56878"
-        );
-
-      }
-
-
-      if (
-        type === "iris"
-      ) {
-
-        for (
-          let i = 0;
-          i < 16;
-          i++
-        ) {
-
-          const x =
-            cam +
-            30 +
-            i*150;
-
-
-          circle(
-            x,
-            235,
-            6,
-            "#8c5aa3"
-          );
-
-
-          circle(
-            x + 5,
-            232,
-            6,
-            "#a66ac0"
-          );
-
-        }
-
-      }
-
-    }
-
-
-    /* =====================================================
-       STADE
-       ===================================================== */
-
-    else if (
-      type === "stadium"
-    ) {
-
-      px(
-        0,
-        210,
-        WORLD_W,
-        60,
-        "#467247"
-      );
-
-
-      px(
-        cam + 120,
-        105,
-        330,
-        105,
-        "#8c8d92"
-      );
-
-
-      poly(
-
-        [
-          cam + 100,
-          210,
-
-          cam + 470,
-          210,
-
-          cam + 430,
-          150,
-
-          cam + 140,
-          150
-
-        ],
-
-        "#4d9b56"
-
-      );
-
-
-      for (
-        let i = 0;
-        i < 10;
-        i++
-      ) {
-
-        circle(
-          cam + 130 + i*34,
-          135,
-          4,
-          "#f0d06a"
-        );
-
-      }
-
-
-      px(
-        cam + 250,
-        185,
-        75,
-        25,
-        "#6b8cc0"
-      );
-
-    }
-
-
-    /* =====================================================
-       NUIT / ÉTOILES
-       ===================================================== */
-
-    else if (
-      type === "stars"
-    ) {
-
-      px(
-        0,
-        215,
-        WORLD_W,
-        55,
-        "#2c2438"
-      );
-
-
-      stars(
-        29,
-        90,
-        18,
-        205
-      );
-
-
-      circle(
-        cam + 760,
-        70,
-        25,
-        "#f7e6b0"
-      );
-
-
-      circle(
-        cam + 770,
-        63,
-        25,
-        "#172743"
-      );
-
-
-      for (
-        let i = 0;
-        i < 10;
-        i++
-      ) {
-
-        broadleafTree(
-          cam + i*280,
-          258,
-          .55
-        );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       TRÉSOR
-       ===================================================== */
-
-    else if (
-      type === "treasure"
-    ) {
-
-      px(
-        0,
-        215,
-        WORLD_W,
-        55,
-        "#33263c"
-      );
-
-
-      stars(
-        41,
-        90,
-        18,
-        205
-      );
-
-
-      circle(
-        cam + 740,
-        65,
-        27,
-        "#f7e5ad"
-      );
-
-
-      circle(
-        cam + 750,
-        58,
-        27,
-        "#172743"
-      );
-
-
-      for (
-        let i = 0;
-        i < 8;
-        i++
-      ) {
-
-        broadleafTree(
-          cam + i*310,
-          258,
-          .55
-        );
-
-      }
-
-    }
-
-
-    /* petits détails au sol */
-
-    for (
-      let i = 0;
-      i < 20;
-      i++
-    ) {
-
-      const x =
-        cam - 50 + i*130;
-
-
-      px(
-
+    line(
         x,
-        251 + (i%3)*4,
-        7,
-        2,
+        y-8*scale,
+        x-1*scale,
+        y-52*scale,
+        C.trunkDark,
+        2
+    );
 
-        type === "snow"
-          ? "#c9c9c2"
-          : "#3d5b3d"
+    const cy=y-60*scale;
 
-      );
+    const leaves=[
+        [-42,-12,-18,-3],
+        [-34,-30,-15,-10],
+        [-12,-43,-3,-13],
+        [7,-43,12,-13],
+        [26,-32,12,-8],
+        [43,-11,14,-3]
+    ];
+
+    for(const p of leaves){
+
+        poly([
+            [x,cy],
+            [x+p[0]*scale,cy+p[1]*scale],
+            [x+p[2]*scale,cy+p[3]*scale],
+            [x+7*scale,cy+3*scale]
+        ],C.tree2);
 
     }
 
-  }
+    circle(
+        x,
+        cy,
+        5*scale,
+        C.tree
+    );
+
+}
 
 
-  /* =========================================================
-     BOUTEILLE
-     ========================================================= */
+/* =========================================================
+   FORÊT
+========================================================= */
 
-  function drawBottle(
-    x,
-    y
-  ) {
+function forestBackground(){
+
+    rect(
+        0,
+        74,
+        VW,
+        106,
+        "#467d53"
+    );
+
+    for(let i=0;i<12;i++){
+
+        const x=(i*37 - S.camera*.22)%VW;
+
+        rect(
+            x+13,
+            95,
+            5,
+            48,
+            C.trunkDark
+        );
+
+        circle(
+            x+15,
+            91,
+            14,
+            C.tree
+        );
+
+        circle(
+            x+7,
+            96,
+            9,
+            C.tree2
+        );
+
+        circle(
+            x+24,
+            96,
+            9,
+            C.tree3
+        );
+
+    }
+
+    rect(
+        0,
+        129,
+        VW,
+        51,
+        "#315f3d"
+    );
+
+}
+
+
+/* =========================================================
+   MONTAGNES
+========================================================= */
+
+function mountains(){
+
+    poly([
+        [0,112],
+        [38,72],
+        [75,107],
+        [113,55],
+        [157,110],
+        [202,65],
+        [245,108],
+        [285,54],
+        [320,111]
+    ],"#536e76");
+
+    poly([
+        [0,112],
+        [40,78],
+        [75,108],
+        [113,65],
+        [155,111]
+    ],"#687f83");
+
+    poly([
+        [0,112],
+        [320,112],
+        [320,180],
+        [0,180]
+    ],C.grassDark);
+
+}
+
+
+/* =========================================================
+   LAC
+========================================================= */
+
+function lake(){
+
+    rect(
+        0,
+        70,
+        VW,
+        75,
+        "#398fa5"
+    );
+
+    for(let i=0;i<14;i++){
+
+        const y=76+i*5;
+
+        line(
+            10+(i%3)*24,
+            y,
+            78+(i%4)*28,
+            y,
+            "#71c4cb",
+            1
+        );
+
+    }
+
+    rect(
+        0,
+        142,
+        VW,
+        38,
+        C.grass
+    );
+
+}
+
+
+/* =========================================================
+   VILLE
+========================================================= */
+
+function city(){
+
+    rect(
+        0,
+        72,
+        VW,
+        67,
+        "#8db6c0"
+    );
+
+    for(let i=0;i<9;i++){
+
+        const x=i*40-(S.camera*.18%40);
+
+        const h=30+(i%4)*12;
+
+        rect(
+            x,
+            139-h,
+            28,
+            h,
+            i%2 ? "#806f68" : "#967b70"
+        );
+
+        for(let yy=145-h;yy<136;yy+=9){
+
+            for(let xx=x+5;xx<x+25;xx+=9){
+
+                rect(
+                    xx,
+                    yy,
+                    4,
+                    5,
+                    i%3===0 ? C.gold : "#d4e5dc"
+                );
+
+            }
+
+        }
+
+    }
+
+    rect(
+        0,
+        139,
+        VW,
+        41,
+        "#77736c"
+    );
+
+    line(
+        0,158,VW,158,
+        "#d5c79d",
+        2
+    );
+
+}
+
+
+/* =========================================================
+   NEIGE
+========================================================= */
+
+function snow(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#8fa8c0"
+    );
+
+    poly([
+        [0,120],
+        [45,69],
+        [90,119],
+        [145,58],
+        [200,119],
+        [250,70],
+        [320,120],
+        [320,180],
+        [0,180]
+    ],"#dce8ed");
+
+    for(let i=0;i<55;i++){
+
+        const x=(i*67)%VW;
+        const y=70+(i*31)%95;
+
+        rect(
+            x,
+            y,
+            1,
+            1,
+            C.white
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   NOËL
+========================================================= */
+
+function christmas(){
+
+    snow();
+
+    const x=75;
+
+    rect(
+        x,
+        85,
+        7,
+        61,
+        C.trunk
+    );
+
+    for(let i=0;i<5;i++){
+
+        poly([
+            [x+3,75+i*11],
+            [x-20-i*2,105+i*10],
+            [x+26+i*3,105+i*10]
+        ],C.tree);
+
+    }
+
+    for(let i=0;i<12;i++){
+
+        circle(
+            x-14+(i*17)%35,
+            84+(i*19)%55,
+            2,
+            i%2 ? C.gold : C.pink
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CASCADE
+========================================================= */
+
+function waterfall(){
+
+    mountains();
+
+    rect(
+        140,
+        70,
+        42,
+        66,
+        "#4d6267"
+    );
+
+    rect(
+        153,
+        80,
+        17,
+        57,
+        "#70c7d4"
+    );
+
+    rect(
+        158,
+        82,
+        4,
+        53,
+        "#b1e2e2"
+    );
+
+    for(let i=0;i<8;i++){
+
+        circle(
+            161+(i%3)*5,
+            138+(i%4)*4,
+            3+i%2,
+            "#83cbd0"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   JARDIN
+========================================================= */
+
+function garden(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#87a95f"
+    );
+
+    for(let i=0;i<14;i++){
+
+        const x=(i*29-S.camera*.12)%VW;
+        const y=92+(i%4)*14;
+
+        circle(x,y,7,C.tree2);
+        circle(x+7,y+2,6,C.tree3);
+
+        circle(
+            x+3,
+            y-4,
+            2,
+            i%2 ? C.pink : C.gold
+        );
+
+    }
+
+    rect(
+        0,
+        135,
+        VW,
+        45,
+        "#c8b77a"
+    );
+
+}
+
+
+/* =========================================================
+   PARC
+========================================================= */
+
+function park(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#71a85a"
+    );
+
+    rect(
+        0,
+        135,
+        VW,
+        45,
+        "#c4a96a"
+    );
+
+    // bancs
+    for(let i=0;i<3;i++){
+
+        const x=40+i*110;
+
+        rect(x,118,30,4,C.wood);
+        rect(x+3,122,4,12,C.woodDark);
+        rect(x+23,122,4,12,C.woodDark);
+
+    }
+
+}
+
+
+/* =========================================================
+   CINÉMA
+========================================================= */
+
+function cinema(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#504a56"
+    );
+
+    rect(
+        72,
+        73,
+        175,
+        65,
+        "#7a3e4d"
+    );
+
+    rect(
+        82,
+        83,
+        155,
+        40,
+        "#d8c6a0"
+    );
+
+    rect(
+        92,
+        91,
+        135,
+        25,
+        "#1e3043"
+    );
+
+    rect(
+        0,
+        138,
+        VW,
+        42,
+        "#39333c"
+    );
+
+    for(let i=0;i<8;i++){
+
+        circle(
+            18+i*43,
+            151,
+            6,
+            "#c18a44"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   VILLAGE
+========================================================= */
+
+function village(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#6e9d65"
+    );
+
+    for(let i=0;i<4;i++){
+
+        const x=25+i*82;
+
+        rect(
+            x,
+            104,
+            52,
+            37,
+            "#b8754a"
+        );
+
+        poly([
+            [x-5,105],
+            [x+26,82],
+            [x+57,105]
+        ],"#754032");
+
+        rect(
+            x+21,
+            119,
+            10,
+            22,
+            "#553428"
+        );
+
+        rect(
+            x+7,
+            111,
+            10,
+            8,
+            "#c8e2dc"
+        );
+
+        rect(
+            x+35,
+            111,
+            10,
+            8,
+            "#c8e2dc"
+        );
+
+    }
+
+    rect(
+        0,
+        143,
+        VW,
+        37,
+        "#c6aa72"
+    );
+
+}
+
+
+/* =========================================================
+   CANNES
+========================================================= */
+
+function cannes(){
+
+    sea();
+
+    rect(
+        0,
+        132,
+        VW,
+        48,
+        "#d8c59a"
+    );
+
+    for(let i=0;i<5;i++){
+
+        const x=15+i*70;
+
+        rect(
+            x,
+            104,
+            40,
+            28,
+            "#f0dfb0"
+        );
+
+        rect(
+            x+5,
+            111,
+            30,
+            21,
+            "#6e9e9f"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SOUVENIR
+========================================================= */
+
+function memoryScene(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#9a7b70"
+    );
+
+    // ciel rose
+    rect(
+        0,
+        70,
+        VW,
+        38,
+        "#d99a87"
+    );
 
     circle(
-      x,
-      y,
-      12,
-      "#d7ebd7"
+        240,
+        82,
+        14,
+        "#ffd28a"
     );
 
+    // chemin
+    poly([
+        [125,180],
+        [160,115],
+        [180,115],
+        [220,180]
+    ],"#c6a16d");
 
-    px(
-      x - 6,
-      y - 2,
-      12,
-      13,
-      "#9ac6bf"
+    // fleurs
+    for(let i=0;i<20;i++){
+
+        const x=(i*31)%VW;
+        const y=120+(i*13)%45;
+
+        circle(x,y,2,i%2 ? C.pink : C.gold);
+
+    }
+
+}
+
+
+/* =========================================================
+   STADE
+========================================================= */
+
+function stadium(){
+
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#477b55"
     );
 
-
-    px(
-      x - 3,
-      y - 19,
-      6,
-      10,
-      "#c4d9c7"
+    rect(
+        35,
+        85,
+        250,
+        72,
+        "#d8d0a5"
     );
 
-
-    px(
-      x - 6,
-      y - 23,
-      12,
-      5,
-      "#714b31"
+    rect(
+        45,
+        94,
+        230,
+        55,
+        "#3e9158"
     );
 
+    g.strokeStyle="#f5e9b8";
+    g.lineWidth=2;
 
-    px(
-      x - 4,
-      y + 3,
-      8,
-      5,
-      "#f5e5a2"
+    g.strokeRect(
+        70,
+        103,
+        180,
+        38
     );
 
-  }
+    g.beginPath();
+    g.arc(
+        160,
+        122,
+        14,
+        0,
+        Math.PI*2
+    );
+    g.stroke();
+
+}
 
 
-  /* =========================================================
-     CLÉ LUMINEUSE
-     ========================================================= */
+/* =========================================================
+   ÉTOILES
+========================================================= */
 
-  function drawKey(
-    x,
-    y,
-    pulse = 0
-  ) {
+function stars(){
 
-    const glow =
-      3 +
-      Math.sin(pulse)*2;
-
-
-    circle(
-      x,
-      y,
-      13 + glow,
-      "rgba(255,215,91,.13)"
+    rect(
+        0,
+        70,
+        VW,
+        110,
+        "#1d2846"
     );
 
+    for(let i=0;i<70;i++){
 
-    ctx.save();
+        const x=(i*47)%VW;
+        const y=72+(i*29)%70;
 
+        rect(
+            x,
+            y,
+            i%4===0 ? 2 : 1,
+            i%4===0 ? 2 : 1,
+            i%3===0 ? C.gold : C.white
+        );
 
-    ctx.translate(
-      x,
-      y
+    }
+
+    rect(
+        0,
+        140,
+        VW,
+        40,
+        "#25345a"
     );
 
+}
 
-    ctx.rotate(
-      -0.15
+
+/* =========================================================
+   TREASURE
+========================================================= */
+
+function treasureScene(){
+
+    stars();
+
+    // île
+    poly([
+        [0,150],
+        [55,135],
+        [105,145],
+        [165,131],
+        [225,142],
+        [280,134],
+        [320,148],
+        [320,180],
+        [0,180]
+    ],"#315f43");
+
+    // coffre
+    const x=160;
+    const y=118;
+
+    rect(
+        x-32,
+        y,
+        64,
+        32,
+        C.woodDark
     );
 
-
-    circle(
-      0,
-      -10,
-      7,
-      COLORS.gold
+    rect(
+        x-28,
+        y+4,
+        56,
+        24,
+        "#9b5c2c"
     );
 
+    poly([
+        [x-31,y+3],
+        [x,y-13],
+        [x+31,y+3]
+    ],"#7d4825");
 
-    circle(
-      0,
-      -10,
-      3,
-      "#49301d"
+    rect(
+        x-5,
+        y+12,
+        10,
+        10,
+        C.gold
     );
 
-
-    px(
-      -2,
-      -4,
-      4,
-      25,
-      COLORS.gold
-    );
+}
 
 
-    px(
-      2,
-      8,
-      11,
-      4,
-      COLORS.gold
-    );
+/* =========================================================
+   DÉCOR PRINCIPAL
+========================================================= */
+
+function drawEnvironment(){
+
+    const e=environments[S.scene];
+
+    sky();
+    celestial();
+
+    if(
+        e==="beach" ||
+        e==="cove"
+    ){
+
+        sea();
+        beachGround();
+
+        palm(
+            45,
+            140,
+            1.05
+        );
+
+        palm(
+            282,
+            142,
+            .72
+        );
+
+        if(e==="cove"){
+
+            // rochers
+            circle(95,128,17,C.stoneDark);
+            circle(105,124,12,C.stone);
+            circle(248,126,19,C.stoneDark);
+
+        }
+
+    }
+
+    else if(
+        e==="forest" ||
+        e==="forest2"
+    ){
+
+        forestBackground();
+
+        if(e==="forest2"){
+
+            for(let i=0;i<6;i++){
+
+                const x=(i*61-S.camera*.25)%VW;
+
+                circle(
+                    x,
+                    115,
+                    17,
+                    C.treeDark || C.tree
+                );
+
+            }
+
+        }
+
+    }
+
+    else if(e==="mountain"){
+
+        mountains();
+
+    }
+
+    else if(e==="lake"){
+
+        lake();
+
+    }
+
+    else if(e==="garden"){
+
+        garden();
+
+    }
+
+    else if(e==="city"){
+
+        city();
+
+    }
+
+    else if(e==="cinema"){
+
+        cinema();
+
+    }
+
+    else if(e==="village"){
+
+        village();
+
+    }
+
+    else if(e==="waterfall"){
+
+        waterfall();
+
+    }
+
+    else if(e==="cannes"){
+
+        cannes();
+
+    }
+
+    else if(e==="park"){
+
+        park();
+
+    }
+
+    else if(e==="snow"){
+
+        snow();
+
+    }
+
+    else if(e==="memory"){
+
+        memoryScene();
+
+    }
+
+    else if(e==="christmas"){
+
+        christmas();
+
+    }
+
+    else if(e==="iris"){
+
+        garden();
+
+    }
+
+    else if(e==="stadium"){
+
+        stadium();
+
+    }
+
+    else if(e==="stars"){
+
+        stars();
+
+    }
+
+    else if(e==="treasure"){
+
+        treasureScene();
+
+    }
+
+}
 
 
-    px(
-      2,
-      15,
-      7,
-      4,
-      COLORS.gold
-    );
+/* =========================================================
+   OBJETS DE ZONE
+========================================================= */
+
+function drawObjects(){
+
+    const scene=S.scene;
+
+    // bouteille pour le début
+    if(scene===0 && !S.introDone){
+
+        const x=245;
+
+        // ombre
+        rect(
+            x-6,
+            139,
+            15,
+            3,
+            "rgba(40,30,20,.25)"
+        );
+
+        // bouteille
+        rect(
+            x-4,
+            121,
+            10,
+            18,
+            "#dce4cf"
+        );
+
+        rect(
+            x-2,
+            117,
+            6,
+            5,
+            "#f2e8b7"
+        );
+
+        rect(
+            x-2,
+            119,
+            5,
+            1,
+            C.gold
+        );
+
+        rect(
+            x-5,
+            115,
+            12,
+            4,
+            C.woodDark
+        );
+
+    }
+
+    // petits objets qui donnent de la profondeur
+    for(let i=0;i<8;i++){
+
+        const x=(i*91 - S.camera*.45)%VW;
+
+        if(x<-10) continue;
+
+        if(scene===0 || scene===1){
+
+            circle(
+                x,
+                143+(i%3)*7,
+                2+(i%2),
+                i%2 ? C.sandLight : C.sandDark
+            );
+
+        }
+
+        if(
+            scene===2 ||
+            scene===3 ||
+            scene===6
+        ){
+
+            circle(
+                x,
+                134+(i%3)*7,
+                3,
+                i%2 ? C.tree2 : C.tree3
+            );
+
+        }
+
+    }
+
+}
 
 
-    ctx.restore();
+/* =========================================================
+   CELENA — SPRITE PIXEL ART
+========================================================= */
 
-  }
+function drawCelena(){
 
+    const px=VW/2;
+    const ground=143;
 
-  /* =========================================================
-     CELENA — PERSONNAGE
-     ========================================================= */
+    const walking=S.walking;
 
-  function drawCelena(
-    x,
-    base,
-    frame
-  ) {
-
-    const moving =
-      S.walking;
-
-
-    const phase =
-      moving
-        ? Math.sin(
-            frame*1.7
-          )
+    const phase=
+        walking
+        ? S.walkFrame
         : 0;
 
+    const legA =
+        walking
+        ? (phase%2===0 ? -3 : 3)
+        : 0;
 
-    const leg =
-      phase*5;
+    const legB=-legA;
 
-
-    const arm =
-      -phase*3;
-
-
-    /* ombre */
-
-    circle(
-      x,
-      base + 4,
-      19,
-      "rgba(25,25,30,.25)"
+    // ombre
+    rect(
+        px-16,
+        ground+1,
+        32,
+        5,
+        "rgba(28,34,38,.30)"
     );
-
 
     /* jambes */
 
-    px(
-      x - 11 + leg,
-      base - 35,
-      9,
-      35,
-      COLORS.blue
+    rect(
+        px-10+legA,
+        ground-24,
+        8,
+        23,
+        C.pants
     );
 
-
-    px(
-      x + 2 - leg,
-      base - 35,
-      9,
-      35,
-      COLORS.blue
+    rect(
+        px+2+legB,
+        ground-24,
+        8,
+        23,
+        C.pants
     );
 
-
-    /* chaussures */
-
-    px(
-      x - 14 + leg,
-      base - 3,
-      13,
-      6,
-      "#18243a"
+    rect(
+        px-11+legA,
+        ground-3,
+        9,
+        4,
+        C.boot
     );
 
-
-    px(
-      x + 2 - leg,
-      base - 3,
-      13,
-      6,
-      "#18243a"
+    rect(
+        px+2+legB,
+        ground-3,
+        10,
+        4,
+        C.boot
     );
-
 
     /* corps */
 
-    px(
-      x - 17,
-      base - 80,
-      34,
-      48,
-      COLORS.pink
+    rect(
+        px-16,
+        ground-61,
+        32,
+        37,
+        C.shirt
     );
 
-
-    px(
-      x - 17,
-      base - 33,
-      34,
-      10,
-      "#ba5365"
+    rect(
+        px-12,
+        ground-58,
+        24,
+        4,
+        C.shirtDark
     );
-
 
     /* bras */
 
-    px(
-      x - 25,
-      base - 75 + arm,
-      8,
-      29,
-      COLORS.skin
+    const armA=
+        walking
+        ? (phase%2===0 ? 2 : -2)
+        : 0;
+
+    rect(
+        px-21+armA,
+        ground-59,
+        7,
+        24,
+        C.skin
     );
 
-
-    px(
-      x + 17,
-      base - 75 - arm,
-      8,
-      29,
-      COLORS.skin
+    rect(
+        px+14-armA,
+        ground-59,
+        7,
+        24,
+        C.skin
     );
 
+    /* sac */
 
-    /* sac à dos */
-
-    px(
-      x + 18,
-      base - 78,
-      10,
-      34,
-      "#745036"
+    rect(
+        px+15,
+        ground-57,
+        9,
+        23,
+        C.bagDark || C.bag
     );
 
-
-    px(
-      x + 23,
-      base - 69,
-      8,
-      22,
-      "#8c6039"
+    rect(
+        px+17,
+        ground-55,
+        8,
+        13,
+        C.bagLight
     );
-
 
     /* cou */
 
-    px(
-      x - 6,
-      base - 90,
-      12,
-      13,
-      COLORS.skin
+    rect(
+        px-5,
+        ground-68,
+        10,
+        9,
+        C.skin
     );
-
 
     /* visage */
 
-    px(
-      x - 19,
-      base - 118,
-      38,
-      31,
-      COLORS.skin
+    rect(
+        px-17,
+        ground-91,
+        34,
+        27,
+        C.skin
     );
-
 
     /* cheveux */
 
-    px(
-      x - 20,
-      base - 121,
-      40,
-      17,
-      COLORS.hair
+    rect(
+        px-18,
+        ground-95,
+        36,
+        12,
+        C.hair
     );
 
-
-    px(
-      x - 22,
-      base - 113,
-      8,
-      25,
-      COLORS.hair
+    rect(
+        px-18,
+        ground-88,
+        6,
+        18,
+        C.hair
     );
 
-
-    px(
-      x + 14,
-      base - 113,
-      8,
-      25,
-      COLORS.hair
+    rect(
+        px+12,
+        ground-88,
+        6,
+        18,
+        C.hair
     );
 
+    /* visage */
 
-    px(
-      x - 16,
-      base - 126,
-      32,
-      8,
-      COLORS.hair
+    rect(
+        px-10,
+        ground-80,
+        3,
+        3,
+        C.hair
     );
 
-
-    /* yeux */
-
-    px(
-      x - 10,
-      base - 103,
-      3,
-      3,
-      "#241b1a"
+    rect(
+        px+7,
+        ground-80,
+        3,
+        3,
+        C.hair
     );
 
-
-    px(
-      x + 7,
-      base - 103,
-      3,
-      3,
-      "#241b1a"
+    rect(
+        px-5,
+        ground-72,
+        10,
+        2,
+        "#9e4f5c"
     );
-
-
-    /* bouche */
-
-    px(
-      x - 3,
-      base - 95,
-      7,
-      2,
-      "#b55d68"
-    );
-
 
     /* chapeau aventurière */
 
-    px(
-      x - 24,
-      base - 128,
-      48,
-      7,
-      "#d9aa59"
+    rect(
+        px-20,
+        ground-101,
+        40,
+        6,
+        "#d8ae58"
     );
 
-
-    px(
-      x - 17,
-      base - 139,
-      34,
-      12,
-      "#e8c16f"
+    rect(
+        px-14,
+        ground-108,
+        28,
+        9,
+        "#e2be6d"
     );
 
-
-    px(
-      x - 11,
-      base - 138,
-      24,
-      5,
-      "#c28a40"
+    rect(
+        px-9,
+        ground-106,
+        18,
+        3,
+        "#a87535"
     );
 
-  }
+}
 
 
-  /* =========================================================
-     COFFRE
-     ========================================================= */
+/* =========================================================
+   CLE VISUELLE À LA DESTINATION
+========================================================= */
 
-  function drawChest(
-    x,
-    y,
-    open
-  ) {
+function drawDestination(){
 
-    ctx.save();
+    if(S.scene>=20) return;
 
+    if(
+        S.x >
+        S.target-45
+    ){
 
-    ctx.shadowColor =
-      "#f6ce63";
+        const x=VW/2+42;
 
+        const y=111;
 
-    ctx.shadowBlur =
-      18;
+        // halo
+        for(let r=14;r>3;r-=3){
 
-
-    /* coffre */
-
-    px(
-      x - 48,
-      y - 8,
-      96,
-      40,
-      "#6d3f25"
-    );
-
-
-    px(
-      x - 43,
-      y - 13,
-      86,
-      10,
-      "#a6662e"
-    );
-
-
-    px(
-      x - 42,
-      y - 4,
-      84,
-      27,
-      "#81502a"
-    );
-
-
-    for (
-      let i = -30;
-      i <= 30;
-      i += 15
-    ) {
-
-      px(
-        x + i,
-        y - 1,
-        4,
-        24,
-        "#b87935"
-      );
-
-    }
-
-
-    px(
-      x - 6,
-      y + 4,
-      12,
-      17,
-      COLORS.gold
-    );
-
-
-    if (open) {
-
-      poly(
-
-        [
-          x - 43,
-          y - 13,
-
-          x - 32,
-          y - 58,
-
-          x + 32,
-          y - 58,
-
-          x + 43,
-          y - 13
-
-        ],
-
-        "#a86a31"
-
-      );
-
-
-      poly(
-
-        [
-          x - 30,
-          y - 17,
-
-          x - 20,
-          y - 49,
-
-          x + 20,
-          y - 49,
-
-          x + 30,
-          y - 17
-
-        ],
-
-        "#f4c85d"
-
-      );
-
-
-      for (
-        let i = 0;
-        i < 14;
-        i++
-      ) {
-
-        const a =
-          i /
-          14 *
-          Math.PI *
-          2;
-
-
-        circle(
-
-          x +
-          Math.cos(a)*70,
-
-          y - 30 +
-          Math.sin(a)*32,
-
-          3,
-
-          COLORS.gold
-
-        );
-
-      }
-
-    }
-
-
-    ctx.restore();
-
-  }
-
-
-  /* =========================================================
-     MONDE
-     ========================================================= */
-
-  function drawWorld() {
-
-    const d =
-      Math.max(
-        innerWidth / W,
-        innerHeight / H
-      );
-
-
-    const sw =
-      innerWidth / d;
-
-
-    const sh =
-      innerHeight / d;
-
-
-    const maxCam =
-      Math.max(
-        0,
-        WORLD_W - sw
-      );
-
-
-    const cam =
-      Math.max(
-
-        0,
-
-        Math.min(
-
-          maxCam,
-
-          S.x -
-          sw*0.48
-
-        )
-
-      );
-
-
-    ctx.setTransform(
-      d,
-      0,
-      0,
-      d,
-      0,
-      0
-    );
-
-
-    ctx.clearRect(
-      0,
-      0,
-      sw,
-      sh
-    );
-
-
-    ctx.imageSmoothingEnabled =
-      false;
-
-
-    ctx.save();
-
-
-    ctx.translate(
-      -cam,
-      0
-    );
-
-
-    drawEnvironment(
-      types[S.scene],
-      cam
-    );
-
-
-    /* bouteille */
-
-    if (
-      S.scene === 0 &&
-      !S.introDone
-    ) {
-
-      drawBottle(
-        250,
-        220
-      );
-
-    }
-
-
-    /* clé */
-
-    else if (
-      !S.ending
-    ) {
-
-      drawKey(
-        targets[S.scene],
-        214,
-        S.frame
-      );
-
-    }
-
-
-    /* coffre */
-
-    if (
-      S.scene === 19 &&
-      S.ending
-    ) {
-
-      drawChest(
-        S.x + 100,
-        215,
-        true
-      );
-
-    }
-
-
-    /* personnage */
-
-    drawCelena(
-      S.x,
-      224,
-      S.frame
-    );
-
-
-    ctx.restore();
-
-  }
-
-
-  /* =========================================================
-     CARTE
-     ========================================================= */
-
-  function drawMap() {
-
-    const m =
-      $("mapCanvas");
-
-
-    if (!m)
-      return;
-
-
-    const r =
-      m.getBoundingClientRect();
-
-
-    const d =
-      Math.min(
-        devicePixelRatio || 1,
-        2
-      );
-
-
-    m.width =
-      Math.floor(
-        r.width*d
-      );
-
-
-    m.height =
-      Math.floor(
-        r.height*d
-      );
-
-
-    const c =
-      m.getContext("2d");
-
-
-    c.setTransform(
-      d,
-      0,
-      0,
-      d,
-      0,
-      0
-    );
-
-
-    c.imageSmoothingEnabled =
-      false;
-
-
-    /* mer */
-
-    c.fillStyle =
-      "#6fa9b0";
-
-
-    c.fillRect(
-      0,
-      0,
-      r.width,
-      r.height
-    );
-
-
-    /* île */
-
-    c.fillStyle =
-      "#d9c68b";
-
-
-    c.beginPath();
-
-
-    c.moveTo(
-      r.width*.08,
-      r.height*.68
-    );
-
-
-    c.quadraticCurveTo(
-      r.width*.15,
-      r.height*.15,
-      r.width*.55,
-      r.height*.10
-    );
-
-
-    c.quadraticCurveTo(
-      r.width*.93,
-      r.height*.15,
-      r.width*.86,
-      r.height*.75
-    );
-
-
-    c.quadraticCurveTo(
-      r.width*.45,
-      r.height*.98,
-      r.width*.08,
-      r.height*.68
-    );
-
-
-    c.fill();
-
-
-    /* végétation */
-
-    for (
-      let i = 0;
-      i < 35;
-      i++
-    ) {
-
-      const x =
-        r.width*
-        (
-          .12 +
-          ((i*37)%76)/100
-        );
-
-
-      const y =
-        r.height*
-        (
-          .15 +
-          ((i*53)%65)/100
-        );
-
-
-      c.fillStyle =
-        i%3
-          ? "#4c884c"
-          : "#356d43";
-
-
-      c.fillRect(
-        x,
-        y,
-        6+(i%3)*3,
-        5+(i%2)*3
-      );
-
-    }
-
-
-    /* chemin */
-
-    const pts=[];
-
-
-    for (
-      let i=0;
-      i<20;
-      i++
-    ) {
-
-      const px =
-        r.width*
-        (
-          .15+
-          (i%5)*.17
-        );
-
-
-      const py =
-        r.height*
-        (
-          .80-
-          Math.floor(i/5)*.16
-        );
-
-
-      pts.push([
-        px,
-        py
-      ]);
-
-    }
-
-
-    c.strokeStyle =
-      "#fff0ae";
-
-
-    c.lineWidth =
-      3;
-
-
-    c.setLineDash([
-      4,
-      7
-    ]);
-
-
-    c.beginPath();
-
-
-    pts.forEach(
-      (p,i) => {
-
-        if (i)
-          c.lineTo(
-            p[0],
-            p[1]
-          );
-
-        else
-          c.moveTo(
-            p[0],
-            p[1]
-          );
-
-      }
-    );
-
-
-    c.stroke();
-
-
-    c.setLineDash([]);
-
-
-    /* points */
-
-    pts.forEach(
-      (p,i) => {
-
-        c.fillStyle =
-          i<S.keys
-            ? "#e6b944"
-            : "#fff0ae";
-
-
-        c.beginPath();
-
-
-        c.arc(
-          p[0],
-          p[1],
-          10,
-          0,
-          Math.PI*2
-        );
-
-
-        c.fill();
-
-
-        c.fillStyle =
-          "#3c2a1b";
-
-
-        c.font =
-          "bold 9px monospace";
-
-
-        c.textAlign =
-          "center";
-
-
-        c.textBaseline =
-          "middle";
-
-
-        c.fillText(
-          i+1,
-          p[0],
-          p[1]
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =========================================================
-     BOUCLE
-     ========================================================= */
-
-  function loop(t) {
-
-    const dt =
-      Math.min(
-
-        .04,
-
-        (
-          t-S.last
-        )/1000 || 0
-
-      );
-
-
-    S.last =
-      t;
-
-
-    if (
-
-      S.started &&
-      !S.question &&
-      !S.ending &&
-      S.walking
-
-    ) {
-
-      const dx =
-        S.target -
-        S.x;
-
-
-      if (
-        Math.abs(dx)<2
-      ) {
-
-        S.x =
-          S.target;
-
-
-        S.walking =
-          false;
-
-
-        if (!S.arriving) {
-
-          setTimeout(
-            arrive,
-            260
-          );
+            circle(
+                x,
+                y,
+                r,
+                `rgba(246,202,85,${(16-r)/20})`
+            );
 
         }
 
-      }
+        // clé
+        circle(
+            x,
+            y,
+            5,
+            C.gold
+        );
 
-      else {
+        rect(
+            x+4,
+            y-2,
+            13,
+            4,
+            C.gold
+        );
 
-        S.x +=
+        rect(
+            x+13,
+            y+1,
+            3,
+            6,
+            C.goldDark
+        );
 
-          Math.sign(dx) *
-          (
-            48 +
-            S.scene*.7
-          ) *
-          dt;
-
-
-        S.frame +=
-          dt*9;
-
-      }
+        rect(
+            x+8,
+            y+2,
+            3,
+            6,
+            C.goldDark
+        );
 
     }
 
-    else if (
-      S.started
-    ) {
+}
 
-      S.frame +=
-        dt*1.5;
+
+/* =========================================================
+   DESSIN MONDE
+========================================================= */
+
+function renderWorld(){
+
+    drawEnvironment();
+    drawObjects();
+    drawDestination();
+    drawCelena();
+
+}
+
+
+/* =========================================================
+   CAMÉRA
+========================================================= */
+
+function updateCamera(){
+
+    const desired=
+        S.x - 110;
+
+    S.camera +=
+        (desired-S.camera)*0.08;
+
+    if(S.camera<0)
+        S.camera=0;
+
+    const maxCamera=
+        WORLD_W-VW;
+
+    if(S.camera>maxCamera)
+        S.camera=maxCamera;
+
+}
+
+
+/* =========================================================
+   ANIMATION / MOUVEMENT AUTOMATIQUE
+========================================================= */
+
+function updateMovement(dt){
+
+    if(
+        !S.started ||
+        !S.walking ||
+        S.question ||
+        S.ending
+    ){
+
+        return;
+    }
+
+    const speed=
+        32;
+
+    S.x +=
+        speed*dt;
+
+    S.walkClock+=dt;
+
+    if(S.walkClock>.14){
+
+        S.walkClock=0;
+
+        S.walkFrame++;
 
     }
 
+    updateCamera();
 
-    drawWorld();
+    if(
+        S.x >= S.target
+    ){
 
+        S.x=S.target;
 
-    requestAnimationFrame(
-      loop
-    );
+        arrive();
 
-  }
+    }
 
-
-  /* =========================================================
-     ÉVÉNEMENTS
-     ========================================================= */
-
-  $("startBtn")
-    ?.addEventListener(
-      "click",
-      start
-    );
+}
 
 
-  $("dialogNext")
-    ?.addEventListener(
-      "click",
-      next
-    );
+/* =========================================================
+   ARRIVÉE
+========================================================= */
 
+function arrive(){
 
-  $("validateBtn")
-    ?.addEventListener(
-      "click",
-      validate
-    );
+    if(S.arriving)
+        return;
 
+    S.arriving=true;
+    S.walking=false;
 
-  $("revealBtn")
-    ?.addEventListener(
-      "click",
-      reveal
-    );
+    play("button");
 
+    if(!S.introDone){
 
-  $("answerInput")
-    ?.addEventListener(
-      "keydown",
-      e => {
+        S.introDone=true;
 
-        if (
-          e.key === "Enter"
-        )
-          validate();
+        dialog(
 
-      }
-    );
+            [
+                "Mais qu'est-ce que je fais ici ?",
+                "Une bouteille échouée sur le sable attire son attention.",
+                "À l'intérieur… une mystérieuse carte au trésor."
+            ],
 
+            () => {
 
-  $("openChestBtn")
-    ?.addEventListener(
-      "click",
-      chest
-    );
+                show(
+                    "mapIntro",
+                    true
+                );
 
+            }
 
-  $("mapContinue")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        show(
-          "mapIntro",
-          false
         );
 
+        return;
 
-        beginScene(
-          0
+    }
+
+    openQuestion();
+
+}
+
+
+/* =========================================================
+   DÉBUT
+========================================================= */
+
+function start(){
+
+    if(S.started)
+        return;
+
+    S.started=true;
+
+    show(
+        "titleScreen",
+        false
+    );
+
+    show(
+        "gameScreen",
+        true
+    );
+
+    play("resume");
+    play("startAmbience","beach");
+
+    updateHUD();
+
+    dialog(
+        [
+            "Mais qu'est-ce que je fais ici ?"
+        ],
+        () => {
+
+            S.target=targets[0];
+            S.walking=true;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   QUESTION
+========================================================= */
+
+function openQuestion(){
+
+    if(
+        S.question ||
+        S.ending
+    )
+        return;
+
+    const q=
+        window.GAME_DATA &&
+        GAME_DATA.questions
+        ? GAME_DATA.questions[S.scene]
+        : null;
+
+    if(!q)
+        return;
+
+    S.question=true;
+
+    show(
+        "questionScreen",
+        true
+    );
+
+    setText(
+        "questionNumber",
+        `ÉNIGME ${q.id}/20`
+    );
+
+    setText(
+        "questionText",
+        q.question
+    );
+
+    setText(
+        "answerFeedback",
+        ""
+    );
+
+    const input=$("answerInput");
+
+    if(input){
+
+        input.value="";
+
+        setTimeout(
+            () => input.focus(),
+            150
         );
 
-      }
+    }
+
+}
+
+
+/* =========================================================
+   INDICE
+========================================================= */
+
+function revealAnswer(){
+
+    const q=
+        GAME_DATA.questions[S.scene];
+
+    if(!q) return;
+
+    /*
+       IMPORTANT :
+       On donne uniquement la réponse.
+       Aucun souvenir.
+       Aucune explication.
+    */
+
+    setText(
+        "answerFeedback",
+        `💡 Réponse : ${q.answer}`
     );
 
+}
 
-  $("mapBtn")
-    ?.addEventListener(
-      "click",
-      () => {
 
-        show(
-          "mapScreen",
-          true
+/* =========================================================
+   VALIDATION
+========================================================= */
+
+function validate(){
+
+    if(!S.question)
+        return;
+
+    const q=
+        GAME_DATA.questions[S.scene];
+
+    if(!q)
+        return;
+
+    const value=
+        norm(
+            $("answerInput")
+            ? $("answerInput").value
+            : ""
         );
 
+    const accepted=
+        (
+            q.acceptedAnswers ||
+            [q.answer]
+        ).map(norm);
 
-        drawMap();
+    const correct=
+        accepted.includes(value);
 
-      }
+    if(!correct){
+
+        setText(
+            "answerFeedback",
+            "❌ Mauvaise réponse. Essaie encore."
+        );
+
+        play("wrongAnswer");
+
+        return;
+
+    }
+
+    S.question=false;
+
+    S.keys++;
+
+    show(
+        "questionScreen",
+        false
     );
 
+    play("keyFound");
 
-  $("closeMapBtn")
-    ?.addEventListener(
-      "click",
-      () =>
-        show(
-          "mapScreen",
-          false
-        )
+    updateHUD();
+
+    /*
+       PAS DE q.explanation ICI.
+       LE SOUVENIR RESTE SECRET.
+    */
+
+    dialog(
+        [
+            `Bravo ! 🔑 Clé ${S.keys}/20 obtenue.`
+        ],
+        () => {
+
+            if(S.keys>=20){
+
+                openChest();
+
+            }else{
+
+                beginNextScene();
+
+            }
+
+        }
     );
 
+}
 
-  addEventListener(
-    "resize",
+
+/* =========================================================
+   SCÈNE SUIVANTE
+========================================================= */
+
+function beginNextScene(){
+
+    S.scene++;
+
+    S.arriving=false;
+
+    S.x=
+        targets[S.scene]-150;
+
+    if(S.x<60)
+        S.x=60;
+
+    S.target=
+        targets[S.scene];
+
+    S.walking=true;
+
+    S.walkFrame=0;
+
+    updateHUD();
+
+    play(
+        "startAmbience",
+        environments[S.scene]
+    );
+
+}
+
+
+/* =========================================================
+   COFFRE
+========================================================= */
+
+function openChest(){
+
+    S.ending=true;
+    S.walking=false;
+
+    S.scene=19;
+
+    updateHUD();
+
+    show(
+        "chestScreen",
+        true
+    );
+
+    play(
+        "startAmbience",
+        "treasure"
+    );
+
+    const orbit=
+        $("keyOrbit");
+
+    if(!orbit)
+        return;
+
+    orbit.innerHTML="";
+
+    for(let i=0;i<20;i++){
+
+        const key=
+            document.createElement("span");
+
+        key.className="orbit-key";
+
+        key.textContent="🔑";
+
+        key.style.setProperty(
+            "--i",
+            i
+        );
+
+        orbit.appendChild(key);
+
+    }
+
+}
+
+
+/* =========================================================
+   OUVERTURE DU COFFRE
+========================================================= */
+
+function chest(){
+
+    play("chestOpen");
+
+    const graphic=
+        $("chestGraphic");
+
+    if(graphic){
+
+        graphic.classList.add(
+            "open"
+        );
+
+    }
+
+    setTimeout(
+
+        () => {
+
+            show(
+                "chestScreen",
+                false
+            );
+
+            revealMemories();
+
+        },
+
+        1900
+
+    );
+
+}
+
+
+/* =========================================================
+   SOUVENIRS
+========================================================= */
+
+function revealMemories(){
+
+    const list=
+        $("memoryList");
+
+    if(!list)
+        return;
+
+    list.innerHTML="";
+
+    show(
+        "memoriesScreen",
+        true
+    );
+
+    const memories=
+        GAME_DATA.memories
+        ? GAME_DATA.memories.slice(0,20)
+        : [];
+
+    let index=0;
+
+    function addMemory(){
+
+        if(index>=memories.length){
+
+            const btn=
+                $("treasureBtn");
+
+            if(btn)
+                btn.classList.remove("hidden");
+
+            return;
+
+        }
+
+        const m=
+            memories[index];
+
+        const card=
+            document.createElement("article");
+
+        card.className=
+            "memory-item";
+
+        /*
+           LES SOUVENIRS N'APPARAISSENT
+           QU'ICI, APRÈS LE COFFRE.
+        */
+
+        card.innerHTML=`
+
+            <div class="memory-number">
+                ${index+1}
+            </div>
+
+            <div class="memory-content">
+
+                <h3>
+                    ${m.title || `Souvenir ${index+1}`}
+                </h3>
+
+                <p>
+                    ${m.text || m.description || ""}
+                </p>
+
+            </div>
+
+        `;
+
+        list.appendChild(card);
+
+        index++;
+
+        setTimeout(
+            addMemory,
+            250
+        );
+
+    }
+
+    addMemory();
+
+}
+
+
+/* =========================================================
+   CARTE
+========================================================= */
+
+function drawMap(){
+
+    const map=
+        $("mapCanvas");
+
+    if(!map)
+        return;
+
+    const mc=
+        map.getContext("2d");
+
+    const w=
+        map.width=
+        map.clientWidth*
+        Math.min(
+            devicePixelRatio||1,
+            2
+        );
+
+    const h=
+        map.height=
+        map.clientHeight*
+        Math.min(
+            devicePixelRatio||1,
+            2
+        );
+
+    mc.imageSmoothingEnabled=false;
+
+    mc.fillStyle="#497b58";
+    mc.fillRect(0,0,w,h);
+
+    // mer
+    mc.fillStyle="#287fa3";
+
+    for(let i=0;i<7;i++){
+
+        mc.beginPath();
+
+        mc.moveTo(
+            0,
+            i*h/7
+        );
+
+        mc.lineTo(
+            w,
+            i*h/7+8
+        );
+
+        mc.lineTo(
+            w,
+            (i+1)*h/7
+        );
+
+        mc.lineTo(
+            0,
+            (i+1)*h/7-8
+        );
+
+        mc.fill();
+
+    }
+
+    // île
+    mc.fillStyle="#719957";
+
+    mc.beginPath();
+
+    mc.moveTo(w*.08,h*.72);
+    mc.lineTo(w*.16,h*.40);
+    mc.lineTo(w*.30,h*.20);
+    mc.lineTo(w*.55,h*.14);
+    mc.lineTo(w*.82,h*.28);
+    mc.lineTo(w*.90,h*.58);
+    mc.lineTo(w*.76,h*.83);
+    mc.lineTo(w*.43,h*.90);
+    mc.lineTo(w*.18,h*.84);
+
+    mc.closePath();
+    mc.fill();
+
+    // chemin
+    mc.strokeStyle="#ead18a";
+    mc.lineWidth=5;
+
+    mc.beginPath();
+
+    for(let i=0;i<20;i++){
+
+        const px=
+            w*.15+
+            (w*.68/19)*i;
+
+        const py=
+            h*.75-
+            Math.sin(i*.65)*h*.28;
+
+        if(i===0)
+            mc.moveTo(px,py);
+        else
+            mc.lineTo(px,py);
+
+    }
+
+    mc.stroke();
+
+    // points
+    for(let i=0;i<20;i++){
+
+        const px=
+            w*.15+
+            (w*.68/19)*i;
+
+        const py=
+            h*.75-
+            Math.sin(i*.65)*h*.28;
+
+        mc.fillStyle=
+            i<S.keys
+            ? "#f5c94f"
+            : "#fff1bd";
+
+        mc.beginPath();
+        mc.arc(
+            px,
+            py,
+            5,
+            0,
+            Math.PI*2
+        );
+        mc.fill();
+
+        mc.fillStyle="#28352f";
+        mc.font="bold 8px sans-serif";
+        mc.textAlign="center";
+        mc.textBaseline="middle";
+
+        mc.fillText(
+            String(i+1),
+            px,
+            py
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   BOUCLE
+========================================================= */
+
+function loop(time){
+
+    if(!S.lastTime)
+        S.lastTime=time;
+
+    const dt=
+        Math.min(
+            (time-S.lastTime)/1000,
+            .05
+        );
+
+    S.lastTime=time;
+
+    updateMovement(dt);
+
+    g.clearRect(
+        0,
+        0,
+        VW,
+        VH
+    );
+
+    renderWorld();
+
+    /*
+       Le monde est dessiné dans une résolution
+       320x180 puis agrandi sans lissage.
+    */
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const scale=
+        Math.max(
+            canvas.width/VW,
+            canvas.height/VH
+        );
+
+    const dw=
+        VW*scale;
+
+    const dh=
+        VH*scale;
+
+    const dx=
+        (canvas.width-dw)/2;
+
+    const dy=
+        (canvas.height-dh)/2;
+
+    ctx.drawImage(
+        buffer,
+        0,
+        0,
+        VW,
+        VH,
+        dx,
+        dy,
+        dw,
+        dh
+    );
+
+    requestAnimationFrame(loop);
+
+}
+
+requestAnimationFrame(loop);
+
+
+/* =========================================================
+   ÉVÉNEMENTS
+========================================================= */
+
+$("startBtn")?.addEventListener(
+    "click",
+    start
+);
+
+$("dialogNext")?.addEventListener(
+    "click",
+    nextDialog
+);
+
+$("mapContinue")?.addEventListener(
+    "click",
     () => {
 
-      if (
-        !$("mapScreen")
-          ?.classList
-          .contains("hidden")
-      ) {
+        show(
+            "mapIntro",
+            false
+        );
+
+        S.target=
+            targets[0];
+
+        S.walking=true;
+
+    }
+);
+
+$("validateBtn")?.addEventListener(
+    "click",
+    validate
+);
+
+$("revealBtn")?.addEventListener(
+    "click",
+    revealAnswer
+);
+
+$("openChestBtn")?.addEventListener(
+    "click",
+    chest
+);
+
+$("mapBtn")?.addEventListener(
+    "click",
+    () => {
+
+        S.mapOpen=true;
+
+        show(
+            "mapScreen",
+            true
+        );
 
         drawMap();
 
-      }
+    }
+);
+
+$("closeMapBtn")?.addEventListener(
+    "click",
+    () => {
+
+        S.mapOpen=false;
+
+        show(
+            "mapScreen",
+            false
+        );
 
     }
-  );
+);
+
+$("treasureBtn")?.addEventListener(
+    "click",
+    () => {
+
+        if(
+            GAME_DATA &&
+            GAME_DATA.treasureLink
+        ){
+
+            window.location.href=
+                GAME_DATA.treasureLink;
+
+        }
+
+    }
+);
 
 
-  /* =========================================================
-     API
-     ========================================================= */
+/* =========================================================
+   CLAVIER
+   UNIQUEMENT POUR VALIDER / INTERAGIR.
+   AUCUN DÉPLACEMENT.
+========================================================= */
 
-  window.MysteryLoveIsland = {
+$("answerInput")?.addEventListener(
+    "keydown",
+    e => {
 
-    getState:
-      () => S,
+        if(
+            e.key==="Enter"
+        ){
 
+            e.preventDefault();
+
+            validate();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   EXPOSITION DEBUG
+========================================================= */
+
+window.MysteryLoveIsland={
+    state:S,
     start,
-
-    interact:
-      arrive
-
-  };
-
-
-  requestAnimationFrame(
-    loop
-  );
+    openQuestion,
+    revealAnswer,
+    validate
+};
 
 })();
